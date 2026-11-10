@@ -1,0 +1,23 @@
+[Unit]
+# checkhookd — the CheckHook daemon: IDS bridge (Snort 3 / Suricata alerts),
+# ML flow detector (when a model exists), block expiry and hourly read-only
+# LLM triage, in one process.
+# Settings: /etc/checkhook/checkhook.yaml  (enforce: false = dry-run, blocks nothing)
+# Logs:     journalctl -u checkhookd
+Description=CheckHook daemon (detection -> blocklist -> kernel enforcement)
+After=network-online.target checkhook-xdp.service checkhook-ids.service ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__ROOT__
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m checkhook.daemon
+Restart=on-failure
+RestartSec=5
+# exit status 2 = misconfiguration (e.g. XDP backend not loaded): don't loop
+RestartPreventExitStatus=2
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

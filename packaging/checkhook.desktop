@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=CheckHook
+GenericName=AI Firewall
+Comment=Detection → blocklist → kernel-speed enforcement (이이제이)
+# Paths below are filled in by install-desktop.sh at install time.
+# Opens a terminal, prints the CheckHook banner + menu, then drops you into an
+# interactive shell inside the project (Kali-tool style).
+Exec=bash -c "cd __CHECKHOOK_DIR__ && bin/checkhook; exec bash"
+Icon=__CHECKHOOK_ICON__
+Terminal=true
+Categories=Security;Network;System;
+Keywords=firewall;xdp;ebpf;nftables;ids;snort;ml;ai;security;
+StartupNotify=false

@@ -1,0 +1,76 @@
+"""Load the CheckHook YAML config (/etc/checkhook/checkhook.yaml by default).
+
+Missing keys fall back to the defaults below, so a minimal config works.
+"""
+import copy
+import os
+
+WINDOWS = os.name == "nt"
+PROGRAMDATA = os.path.join(os.environ.get("ProgramData", r"C:\ProgramData"), "CheckHook")
+
+DEFAULT_PATH = os.environ.get(
+    "CHECKHOOK_CONFIG",
+    os.path.join(PROGRAMDATA, "checkhook.yaml") if WINDOWS else "/etc/checkhook/checkhook.yaml")
+
+DEFAULTS = {
+    "enforce": False,
+    "backend": "nft",
+    "block_timeout": "1h",
+    "block_private": False,
+    "skip": [],
+    # signature IDS: Snort 3 alert_json or Suricata eve.json (auto-detected).
+    # Older configs call this section "snort:"; that is still accepted.
+    "ids": {"enabled": True, "alert_file": "/var/log/checkhook/snort/alert_json.txt"},
+    "ml": {"enabled": True, "iface": "eth0",
+           "model": "/var/lib/checkhook/model.joblib",
+           "threshold": 0.9, "idle": 15, "active": 120},
+    "xdp": {"iface": "eth0", "mode": "generic"},
+    "triage": {"enabled": True, "alert_file": "/var/log/snort/alert_json.txt",
+               "last": 500, "model": "qwen2.5:7b",
+               "host": "http://localhost:11434", "lang": "English",
+               "out": "/var/lib/checkhook/triage/report.txt"},
+    # flow logging for ML training data (Windows; Linux uses checkhook-capture)
+    "capture": {"enabled": False, "dir": "/var/lib/checkhook/flows"},
+    "daemon": {"expiry_interval": 60, "triage_interval": 3600},
+}
+
+if WINDOWS:   # same structure, Windows locations and enforcement
+    DEFAULTS["backend"] = "winfw"
+    DEFAULTS["ids"]["alert_file"] = os.path.join(PROGRAMDATA, "suricata", "eve.json")
+    DEFAULTS["ml"]["iface"] = "auto"
+    DEFAULTS["ml"]["model"] = os.path.join(PROGRAMDATA, "model.joblib")
+    DEFAULTS["triage"]["alert_file"] = DEFAULTS["ids"]["alert_file"]
+    DEFAULTS["triage"]["out"] = os.path.join(PROGRAMDATA, "triage", "report.txt")
+    DEFAULTS["capture"] = {"enabled": True, "dir": os.path.join(PROGRAMDATA, "flows")}
+
+
+def _merge(base, over):
+    out = copy.deepcopy(base)
+    for k, v in (over or {}).items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def load(path=None):
+    path = path or DEFAULT_PATH
+    try:
+        import yaml
+    except ImportError:
+        raise SystemExit("PyYAML is missing: install python3-pyyaml (RHEL/Fedora), python3-yaml "
+                         "(Debian/Ubuntu), python-yaml (Arch), python3-PyYAML (openSUSE), "
+                         "or: pip install pyyaml")
+    if not os.path.exists(path):
+        hint = ("packaging\\windows\\install.ps1" if WINDOWS
+                else "sudo bash packaging/install-services.sh")
+        raise SystemExit(f"config not found: {path} (install: {hint})")
+    with open(path) as f:
+        data = yaml.safe_load(f) or {}
+    if not isinstance(data, dict):
+        raise SystemExit(f"config {path}: top level must be a mapping")
+    if "snort" in data:                       # backward compatibility (<= 1.0)
+        legacy = data.pop("snort")
+        data.setdefault("ids", legacy)
+    return _merge(DEFAULTS, data)

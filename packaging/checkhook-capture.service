@@ -1,0 +1,32 @@
+[Unit]
+# CheckHook — benign-traffic capture for ML training data.
+# Captures HEADERS ONLY (snaplen 128B): packet sizes, timing and TCP flags are
+# kept; payloads (URLs, message bodies) are NOT stored.
+#
+# Ring buffer: 40 files x 25 MB (~1 GB max), oldest overwritten automatically.
+# Files: /var/lib/checkhook/benign.pcap00 .. benign.pcap39
+#
+# Privileges: tcpdump starts as root (needed to open the interface), then drops
+# to an unprivileged user (-Z: 'tcpdump' where the distro has it, else
+# 'checkhook-cap') and writes as that user, so the directory is handed to that
+# user just before start. On SELinux systems the directory label is re-applied.
+#
+# IMPORTANT: this assumes the captured traffic is NORMAL. Stop it before any
+# attack practice on the same host or LAN, or that traffic gets mislabelled 0:
+#   sudo systemctl stop checkhook-capture
+Description=CheckHook benign-traffic capture (headers only, ML training data)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+UMask=0022
+ExecStartPre=/usr/bin/install -d -o __CAPUSER__ -g __CAPUSER__ -m 0755 /var/lib/checkhook
+ExecStartPre=-__RESTORECON__ -R /var/lib/checkhook
+ExecStart=__TCPDUMP__ -i __IFACE__ -Z __CAPUSER__ -s 128 -C 25 -W 40 -w /var/lib/checkhook/benign.pcap
+Restart=always
+RestartSec=5
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

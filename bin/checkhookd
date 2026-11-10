@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# checkhookd — the CheckHook daemon (IDS bridge, ML detector, block expiry,
+# LLM triage in one process). Normally started by systemd (checkhookd.service).
+#   checkhookd [--config /etc/checkhook/checkhook.yaml]
+set -euo pipefail
+ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+cd "$ROOT"
+exec python3 -m checkhook.daemon "$@"

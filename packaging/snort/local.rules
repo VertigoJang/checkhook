@@ -1,0 +1,16 @@
+# CheckHook local Snort 3 rules — loaded by /etc/checkhook/snort/checkhook.lua
+# (installed to /etc/checkhook/snort/local.rules; edit there, then:
+#  sudo systemctl restart checkhook-ids)
+#
+# Port scans are detected by Snort's built-in port_scan inspector (gid 122),
+# enabled in checkhook.lua — no rule needed here.
+
+# Inbound connection attempts to services a laptop should never expose.
+alert tcp any any -> any 23   (msg:"CHECKHOOK inbound telnet attempt"; flags:S; sid:1100001; rev:1;)
+alert tcp any any -> any 445  (msg:"CHECKHOOK inbound SMB attempt"; flags:S; sid:1100002; rev:1;)
+alert tcp any any -> any 3389 (msg:"CHECKHOOK inbound RDP attempt"; flags:S; sid:1100003; rev:1;)
+alert tcp any any -> any 5900 (msg:"CHECKHOOK inbound VNC attempt"; flags:S; sid:1100004; rev:1;)
+
+# Pipeline self-test: uncomment, restart checkhook-ids, ping this machine from
+# another host, and watch `checkhook logs`. Comment it out again afterwards.
+# alert icmp any any -> any any (msg:"CHECKHOOK TEST ICMP"; itype:8; sid:1199999; rev:1;)

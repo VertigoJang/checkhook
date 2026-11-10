@@ -1,0 +1,13 @@
+# CheckHook local rules for Suricata (same intent as packaging/snort/local.rules).
+# Loaded with `-s checkhook.rules` in addition to Suricata's own rule files.
+# Windows: installed to C:\ProgramData\CheckHook\suricata\checkhook.rules
+
+# Inbound connection attempts to services a workstation should never expose.
+alert tcp any any -> any 23 (msg:"CHECKHOOK inbound telnet attempt"; flow:to_server; flags:S; sid:1100001; rev:2;)
+alert tcp any any -> any 445 (msg:"CHECKHOOK inbound SMB attempt"; flow:to_server; flags:S; sid:1100002; rev:2;)
+alert tcp any any -> any 3389 (msg:"CHECKHOOK inbound RDP attempt"; flow:to_server; flags:S; sid:1100003; rev:2;)
+alert tcp any any -> any 5900 (msg:"CHECKHOOK inbound VNC attempt"; flow:to_server; flags:S; sid:1100004; rev:2;)
+
+# Pipeline self-test: uncomment, restart Suricata, ping this machine from another
+# host and watch the agent log. Comment it out again afterwards.
+# alert icmp any any -> any any (msg:"CHECKHOOK TEST ICMP"; itype:8; sid:1199999; rev:1;)

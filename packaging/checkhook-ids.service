@@ -1,0 +1,19 @@
+[Unit]
+# CheckHook-managed Snort 3 IDS. Config: /etc/checkhook/snort/checkhook.lua (generated
+# by install-snort.sh; it includes your base snort.lua and adds JSON alerts,
+# port-scan detection and CheckHook's rules). Alerts: /var/log/checkhook/snort/
+Description=CheckHook IDS (Snort 3, JSON alerts for checkhookd)
+After=network-online.target
+Wants=network-online.target
+Before=checkhookd.service
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/install -d -m 0755 /var/log/checkhook/snort
+ExecStart=__SNORT__ -c /etc/checkhook/snort/checkhook.lua -i __IFACE__ -l /var/log/checkhook/snort -A alert_json -k none -q
+Restart=on-failure
+RestartSec=10
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

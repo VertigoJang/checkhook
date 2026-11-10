@@ -1,0 +1,42 @@
+# CheckHook configuration (Windows) — C:\ProgramData\CheckHook\checkhook.yaml
+#
+# After editing, restart the daemon (as administrator):
+#   checkhook restart   (as administrator)
+#
+# SAFETY: enforcement is OFF until you set `enforce: true`. While it is false,
+# detectors only log what they WOULD block (checkhook logs).
+
+enforce: false            # true = add attacker IPs to the Windows Firewall blocklist
+backend: winfw            # Windows Defender Firewall rules (group "CheckHook")
+block_timeout: 1h         # blocks expire on their own (checkhookd removes them)
+block_private: false      # never block private/LAN addresses unless true
+skip: []                  # IPs that must never be blocked, e.g. [192.168.0.1]
+
+ids:                      # Suricata eve.json (written by the "CheckHook Suricata" task)
+  enabled: true
+  alert_file: C:\ProgramData\CheckHook\suricata\eve.json
+
+ml:                       # flow classifier (nfstream + Npcap)
+  enabled: true
+  iface: auto             # auto = adapter with the default route; or a name like "Wi-Fi"
+  model: C:\ProgramData\CheckHook\model.joblib
+  threshold: 0.9
+  idle: 15
+  active: 120
+
+capture:                  # flow logging for ML training data (no payload stored)
+  enabled: true
+  dir: C:\ProgramData\CheckHook\flows
+
+triage:                   # read-only LLM report (local Ollama); never blocks anything
+  enabled: true
+  alert_file: C:\ProgramData\CheckHook\suricata\eve.json
+  last: 500
+  model: qwen2.5:7b
+  host: http://localhost:11434
+  lang: Korean
+  out: C:\ProgramData\CheckHook\triage\report.txt
+
+daemon:
+  expiry_interval: 60     # seconds between expiry checks
+  triage_interval: 3600   # seconds between LLM reports
