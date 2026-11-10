@@ -19,17 +19,17 @@ ids:                      # signature detector: Snort 3 alert_json or Suricata e
 
 ml:                       # flow classifier: nfstream + RandomForest
   enabled: true
-  iface: wlp0s20f3
+  iface: eth0
   model: /var/lib/checkhook/model.joblib   # train with: checkhook train ... --out <this>
   threshold: 0.9          # pick it with: checkhook eval ... --target-fpr 0.01
   idle: 15
   active: 120
 
 xdp:                      # XDP enforcement (used when backend: xdp)
-  iface: wlp0s20f3
+  iface: eth0
   mode: generic            # generic works on any NIC (Wi-Fi too); native needs driver support
 
-triage:                   # read-only LLM report (local Ollama); never blocks anything
+triage:                   # "Check": read-only LLM review of flagged IPs (local Ollama); never blocks or unblocks
   enabled: true
   alert_file: /var/log/checkhook/snort/alert_json.txt   # same file as ids.alert_file
   last: 500

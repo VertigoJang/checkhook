@@ -1,5 +1,31 @@
 # Changelog
 
+## 3.0.0 (in testing)
+
+**Check: the LLM review now does what the name says**
+- Reviews the IPs that were blocked, or with `enforce: false` would have been
+  blocked; before, dry-run left nothing to review.
+- Compares flagged IPs with this host's DNS servers, default gateway and own
+  addresses (Linux and Windows) and marks those as false positives without
+  waiting for the model.
+- Gives the model each flagged IP with its top signatures plus the local
+  network context, and asks for false positives and likely real attacks.
+- The report ends with a ready-to-paste `skip:` line. Still read-only: the
+  blocklist and the config are only changed by a person.
+- If Ollama is unreachable the report is still written (local part only) and
+  the run exits non-zero.
+- Reports in Korean when `triage.lang: Korean`.
+
+**Testing**
+- `packaging/selftest.sh` and `packaging/windows/selftest.ps1`: end-to-end
+  checks (config, services, enforcement round trip with 203.0.113.250,
+  alert parsing, capture, local network, Ollama). `docs/testing.md`.
+- `checkhook.diag`: read-only probes used by the self-tests.
+
+**Other**
+- `install-capture.sh` picks the default-route interface when none is given.
+- The example config uses `eth0` instead of a machine-specific interface.
+
 ## 2.0.0
 
 First public release of CheckHook.

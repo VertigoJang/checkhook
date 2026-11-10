@@ -35,7 +35,9 @@ def common_enforce_args(c):
 def run(module_main, argv):
     sys.argv = [sys.argv[0]] + argv
     print("[checkhook] args:", " ".join(argv), flush=True)
-    module_main()
+    rc = module_main()
+    if isinstance(rc, int) and rc:
+        sys.exit(rc)
 
 
 def main():
@@ -88,6 +90,13 @@ def main():
         argv = ["--alert-file", sect["alert_file"], "--last", str(sect["last"]),
                 "--model", sect["model"], "--host", sect["host"],
                 "--lang", sect["lang"], "--backend", c["backend"]]
+        skip = [str(x) for x in (c.get("skip") or [])]
+        if skip:
+            argv += ["--skip", ",".join(skip)]
+        if c.get("block_private"):
+            argv.append("--block-private")
+        if c.get("enforce"):
+            argv.append("--enforce")
         if out:
             argv += ["--out", out]
         run(m, argv)

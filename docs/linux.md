@@ -34,7 +34,7 @@ sudo pip install --break-system-packages nfstream scikit-learn joblib   # Debian
 
 ## 시그니처 탐지기: Snort 3 또는 Suricata
 
-CheckHook는 Snort 3의 `alert_json`과 Suricata의 `eve.json`을 모두 읽습니다. 줄마다 형식을
+CheckHook은 Snort 3의 `alert_json`과 Suricata의 `eve.json`을 모두 읽습니다. 줄마다 형식을
 자동으로 구분합니다.
 
 Snort 3는 대부분의 배포판이 패키지로 제공하지 않습니다. 소스에서 빌드했거나 Arch의 AUR로
@@ -46,10 +46,10 @@ Snort 3는 대부분의 배포판이 패키지로 제공하지 않습니다. 소
 sudo apt-get install -y suricata          # 배포판에 맞는 명령으로 설치
 sudo nano /etc/suricata/suricata.yaml     # af-packet 항목의 interface를 내 인터페이스로
 sudo systemctl enable --now suricata
-sudo bash packaging/use-suricata.sh       # CheckHook가 /var/log/suricata/eve.json을 읽도록 설정
+sudo bash packaging/use-suricata.sh       # CheckHook이 /var/log/suricata/eve.json을 읽도록 설정
 ```
 
-`use-suricata.sh`는 설정 파일의 경보 파일 경로를 Suricata의 `eve.json`으로 바꾸고, CheckHook가
+`use-suricata.sh`는 설정 파일의 경보 파일 경로를 Suricata의 `eve.json`으로 바꾸고, CheckHook이
 관리하던 Snort(`checkhook-ids`)가 있으면 멈춥니다. 차단 목록에는 한 가지 탐지기만 연결하는
 것이 좋습니다. 기존 설정 파일은 `checkhook.yaml.bak`으로 남습니다.
 
@@ -73,7 +73,7 @@ tcpdump는 root로 시작해 인터페이스를 연 뒤 일반 사용자로 권�
 
 ## 방화벽 관리 도구와의 관계
 
-CheckHook는 별도의 nftables 테이블(`ip checkhook`)만 사용합니다. firewalld(RHEL, Fedora,
+CheckHook은 별도의 nftables 테이블(`ip checkhook`)만 사용합니다. firewalld(RHEL, Fedora,
 openSUSE)나 ufw(Ubuntu)의 규칙은 수정하지 않습니다. nftables에서는 한 테이블의 drop이
 다른 테이블의 accept보다 우선하므로, 차단 목록의 IP는 다른 도구의 설정과 관계없이
 차단됩니다. 설치 후 `sudo nft list tables`로 `ip checkhook` 테이블이 있는지 확인할 수 있습니다.

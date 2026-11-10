@@ -66,7 +66,7 @@ def load(path=None):
         hint = ("packaging\\windows\\install.ps1" if WINDOWS
                 else "sudo bash packaging/install-services.sh")
         raise SystemExit(f"config not found: {path} (install: {hint})")
-    with open(path) as f:
+    with open(path, encoding="utf-8-sig") as f:   # BOM: PowerShell 5.1 writes one
         data = yaml.safe_load(f) or {}
     if not isinstance(data, dict):
         raise SystemExit(f"config {path}: top level must be a mapping")

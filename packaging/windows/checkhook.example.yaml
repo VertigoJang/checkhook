@@ -28,7 +28,7 @@ capture:                  # flow logging for ML training data (no payload stored
   enabled: true
   dir: C:\ProgramData\CheckHook\flows
 
-triage:                   # read-only LLM report (local Ollama); never blocks anything
+triage:                   # "Check": read-only LLM review of flagged IPs (local Ollama); never blocks or unblocks
   enabled: true
   alert_file: C:\ProgramData\CheckHook\suricata\eve.json
   last: 500

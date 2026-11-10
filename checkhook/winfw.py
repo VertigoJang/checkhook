@@ -78,7 +78,7 @@ class WinFirewall:
     # ------------------------------------------------------------ state file
     def _load(self):
         try:
-            with open(self.state) as f:
+            with open(self.state, encoding="utf-8") as f:
                 data = json.load(f)
             return {ip: float(exp) for ip, exp in data.items()}
         except (FileNotFoundError, json.JSONDecodeError):
@@ -87,7 +87,7 @@ class WinFirewall:
     def _save(self, entries):
         os.makedirs(self.base, exist_ok=True)
         tmp = self.state + ".tmp"
-        with open(tmp, "w") as f:
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(entries, f, indent=0, sort_keys=True)
         os.replace(tmp, self.state)
 

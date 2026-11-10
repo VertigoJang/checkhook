@@ -32,10 +32,11 @@ if [[ "${1:-}" == "--uninstall" ]]; then
 fi
 
 IFACE="${1:-}"
-if [[ -z "$IFACE" ]]; then
-  echo "usage: sudo bash packaging/install-capture.sh <iface>" >&2
-  echo "your default interface looks like:" >&2
-  ip -o -4 route show default | awk '{print "  "$5}' >&2
+[[ -z "$IFACE" ]] && IFACE="$(ip -o -4 route show default | awk '{print $5; exit}')"
+if [[ -z "$IFACE" || ! -e "/sys/class/net/$IFACE" ]]; then
+  echo "usage: sudo bash packaging/install-capture.sh [iface]   (default: the interface of the default route)" >&2
+  echo "no usable interface found${IFACE:+ ($IFACE does not exist)}; interfaces:" >&2
+  ip -br link >&2
   exit 1
 fi
 

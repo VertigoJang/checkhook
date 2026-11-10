@@ -31,7 +31,7 @@ class FlowLogger:
         n = 1
         while os.path.exists(path):                 # several files in one second
             path = os.path.join(self.dir, f"{name[:-4]}-{n}.csv"); n += 1
-        self._f = open(path, "w", newline="")
+        self._f = open(path, "w", newline="", encoding="utf-8")
         self._w = csv.writer(self._f)
         self._w.writerow(META + FEATURES)
         self._rows = 0

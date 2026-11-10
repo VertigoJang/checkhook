@@ -60,7 +60,7 @@ Suricata를 쓰지 않으려면 `-NoSuricata`를 붙입니다.
 
 ## 사용
 
-시작 메뉴의 CheckHook를 누르거나 저장소 폴더에서 `.\checkhook.cmd`를 실행합니다. 차단 목록을
+시작 메뉴의 CheckHook을 누르거나 저장소 폴더에서 `.\checkhook.cmd`를 실행합니다. 차단 목록을
 바꾸는 명령은 관리자 권한 PowerShell에서 실행해야 합니다.
 
 ```powershell
