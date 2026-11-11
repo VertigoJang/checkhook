@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # install-capture.sh — register the boot-time benign-traffic capture service.
 #
-# Captures headers only (no payload) on the given interface as a ring buffer
-# (40 x 25 MB) in /var/lib/checkhook, for make_dataset to label later.
+# Captures headers only (no payload) in 25 MB files in /var/lib/checkhook, for
+# make_dataset to label later. Each start (boot) gets its own file names, so
+# earlier captures are kept; the oldest files are removed to stay near 4 GB
+# (CHECKHOOK_CAPTURE_GB=8 sudo -E bash ... for more).
 #
-#   sudo bash packaging/install-capture.sh <iface>
+#   sudo bash packaging/install-capture.sh [iface]
 #   sudo bash packaging/install-capture.sh --uninstall
 #
 # Find your interface with:  ip -o -4 route show default   (the 'dev' name)
@@ -74,7 +76,9 @@ fi
 mkdir -p "$DATA"
 apparmor_allow_tcpdump "$DATA"
 
+MAXFILES=$(( ${CHECKHOOK_CAPTURE_GB:-4} * 40 ))     # 25 MB files; default 4 GB in total
 sed -e "s|__TCPDUMP__|$TCPDUMP|g" -e "s|__IFACE__|$IFACE|g" -e "s|__CAPUSER__|$CAPUSER|g" \
+    -e "s|__MAXFILES__|$MAXFILES|g" \
     "$HERE/checkhook-capture.service" > "$UNIT"
 if [[ -n "$RESTORECON" ]]; then
   sed -i "s|__RESTORECON__|$RESTORECON|" "$UNIT"
@@ -95,7 +99,7 @@ else
   echo "NOT running — see:  sudo journalctl -eu checkhook-capture --no-pager | tail"
 fi
 echo "  interface : $IFACE   (headers only, snaplen 128B — no payload saved; runs as $CAPUSER)"
-echo "  files     : $DATA/benign.pcap00..39  (ring buffer, 40 x 25 MB, oldest overwritten)"
+echo "  files     : $DATA/benign-<start time>.pcapNN  (25 MB each, up to $((MAXFILES / 40)) GB, oldest removed)"
 echo
 echo "check it:   systemctl status checkhook-capture"
 echo "pause it:   sudo systemctl stop checkhook-capture     # before attack practice!"

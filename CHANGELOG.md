@@ -45,6 +45,14 @@
   alert parsing, capture, local network, Ollama). `docs/testing.md`.
 - `checkhook.diag`: read-only probes used by the self-tests.
 
+**Capture**
+- Fixed: every restart of `checkhook-capture` (each boot) started the ring
+  buffer again at `benign.pcap00`, overwriting what earlier boots captured, so
+  the benign data set never grew past one session. Files are now named
+  `benign-<start time>.pcapNN`; old files are removed only to stay near the size
+  cap (default 4 GB, `CHECKHOOK_CAPTURE_GB`). Reinstall with
+  `install-capture.sh` to switch.
+
 **Other**
 - `install-capture.sh` picks the default-route interface when none is given.
 - The example config uses `eth0` instead of a machine-specific interface.

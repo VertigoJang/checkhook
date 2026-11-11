@@ -6,7 +6,7 @@ CheckHook은 리눅스에서 systemd 서비스 몇 개로 동작합니다. 모�
 | 서비스 | 하는 일 | 설치 스크립트 |
 |---|---|---|
 | `checkhookd` | 데몬. IDS 경보 연동, 머신러닝 탐지(모델이 있을 때), 차단 만료, 한 시간 간격의 LLM 검토 | `install-services.sh` |
-| `checkhook-capture` | 머신러닝 학습용 정상 트래픽 수집 (패킷 헤더만, `/var/lib/checkhook/benign.pcap00..39`) | `install-capture.sh` |
+| `checkhook-capture` | 머신러닝 학습용 정상 트래픽 수집 (패킷 헤더만, `/var/lib/checkhook/benign-<시작 시각>.pcapNN`, 기본 최대 4 GB) | `install-capture.sh` |
 | `checkhook-ids` | CheckHook이 관리하는 Snort 3 센서 (JSON 경보, 포트 스캔 탐지) | `install-snort.sh` |
 | `checkhook-xdp` | XDP 프로그램 부착 (`backend: xdp`일 때만) | `install-xdp.sh` |
 
@@ -77,7 +77,7 @@ Snort를 직접 실행하려면 `install-snort.sh`를 건너뛰고 `ids.alert_fi
 `checkhookd`는 `ml.model` 파일이 있을 때만 머신러닝 탐지를 켭니다.
 
 ```bash
-mergecap -w ~/checkhook-data/benign_train.pcap /var/lib/checkhook/benign.pcap*
+mergecap -w ~/checkhook-data/benign_train.pcap /var/lib/checkhook/benign*.pcap*
 # 학습 데이터 생성, 학습, 평가는 README의 "머신러닝 모델 학습" 참고
 sudo cp ~/checkhook-data/checkhook.joblib /var/lib/checkhook/model.joblib
 sudo sed -i 's/^  threshold: .*/  threshold: 0.95/' /etc/checkhook/checkhook.yaml   # checkhook eval이 알려 준 값

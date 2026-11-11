@@ -3,8 +3,10 @@
 # Captures HEADERS ONLY (snaplen 128B): packet sizes, timing and TCP flags are
 # kept; payloads (URLs, message bodies) are NOT stored.
 #
-# Ring buffer: 40 files x 25 MB (~1 GB max), oldest overwritten automatically.
-# Files: /var/lib/checkhook/benign.pcap00 .. benign.pcap39
+# Files: /var/lib/checkhook/benign-<start time>.pcap00 .. 39 — a new name on
+# every start, so a reboot never overwrites what earlier boots captured. Within
+# one run the 40 x 25 MB ring wraps; across runs the oldest files are removed
+# before start so the directory stays under __MAXFILES__ files (x 25 MB).
 #
 # Privileges: tcpdump starts as root (needed to open the interface), then drops
 # to an unprivileged user (-Z: 'tcpdump' where the distro has it, else
@@ -23,7 +25,8 @@ Type=simple
 UMask=0022
 ExecStartPre=/usr/bin/install -d -o __CAPUSER__ -g __CAPUSER__ -m 0755 /var/lib/checkhook
 ExecStartPre=-__RESTORECON__ -R /var/lib/checkhook
-ExecStart=__TCPDUMP__ -i __IFACE__ -Z __CAPUSER__ -s 128 -C 25 -W 40 -w /var/lib/checkhook/benign.pcap
+ExecStartPre=/bin/sh -c 'ls -1t /var/lib/checkhook/benign*.pcap* 2>/dev/null | tail -n +__MAXFILES__ | xargs -r rm -f'
+ExecStart=/bin/sh -c 'exec __TCPDUMP__ -i __IFACE__ -Z __CAPUSER__ -s 128 -C 25 -W 40 -w /var/lib/checkhook/benign-$$(date +%%Y%%m%%d-%%H%%M%%S).pcap'
 Restart=always
 RestartSec=5
 Nice=10

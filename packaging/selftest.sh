@@ -119,14 +119,14 @@ else echo "  [ -- ] no ML model yet ($(cfg model)) — ML detection off until tr
 # ---------------------------------------------------------------- capture ----
 section "capture"
 if installed checkhook-capture; then
-  NEWEST="$(ls -t /var/lib/checkhook/benign.pcap* 2>/dev/null | head -1)"
+  NEWEST="$(ls -t /var/lib/checkhook/benign*.pcap* 2>/dev/null | head -1)"
   if [[ -n "$NEWEST" ]]; then
     AGE=$(( $(date +%s) - $(stat -c %Y "$NEWEST") ))
     SIZE="$(du -sh /var/lib/checkhook 2>/dev/null | cut -f1)"
     (( AGE < 600 )) && pass "capture writing: $NEWEST (${AGE}s ago, total $SIZE)" \
       || warn "newest capture file is ${AGE}s old: $NEWEST (no traffic, or tcpdump stuck)"
   else
-    fail "checkhook-capture installed but no /var/lib/checkhook/benign.pcap* (SELinux/AppArmor? journalctl -u checkhook-capture)"
+    fail "checkhook-capture installed but no /var/lib/checkhook/benign*.pcap* (SELinux/AppArmor? journalctl -u checkhook-capture)"
   fi
 else
   echo "  [ -- ] checkhook-capture not installed"

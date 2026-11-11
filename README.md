@@ -168,7 +168,7 @@ powershell -ExecutionPolicy Bypass -File packaging\windows\install.ps1
 CSV로 기록하며, 학습 방법은 `docs/windows.md`에 있습니다.
 
 ```bash
-mergecap -w ~/checkhook-data/benign_train.pcap /var/lib/checkhook/benign.pcap*
+mergecap -w ~/checkhook-data/benign_train.pcap /var/lib/checkhook/benign*.pcap*
 python3 -m ml.make_dataset --pcap ~/checkhook-data/benign_train.pcap --label 0 --out ~/checkhook-data/benign.csv
 python3 -m ml.make_dataset --pcap ~/checkhook-data/attack.pcap --attacker-ip <공격자 IP> --out ~/checkhook-data/attack.csv
 checkhook train --data ~/checkhook-data/benign.csv --data ~/checkhook-data/attack.csv --out ~/checkhook-data/checkhook.joblib
