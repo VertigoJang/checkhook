@@ -5,7 +5,7 @@
 
 | 환경 | 형태 | 시그니처 탐지기 | 집행 |
 |---|---|---|---|
-| RHEL 10.2 | 실제 컴퓨터 (확인 완료) | Snort 3 | XDP |
+| RHEL 10.3 | 실제 컴퓨터 (확인 완료) | Snort 3 | XDP |
 | Windows 11 | 실제 컴퓨터 | Suricata | Windows Defender 방화벽 |
 | Windows 10 | VirtualBox | Suricata | Windows Defender 방화벽 |
 | Debian | VirtualBox | Suricata | nftables, XDP(generic) |

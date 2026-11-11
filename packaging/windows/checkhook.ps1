@@ -68,6 +68,7 @@ function Show-Menu {
     Write-Host '    logs              follow the checkhookd log (Ctrl+C to quit)'
     Write-Host '    restart           restart checkhookd (after editing the config) (admin)'
     Write-Host '    report            run the LLM triage now and show it     (admin)'
+    Write-Host '    pause / resume    stop / restart training-data logging  (admin)'
     Write-Host '    config            print the effective config'
     Write-Host ''
     Write-Host '  MODEL' -ForegroundColor White
@@ -116,6 +117,8 @@ switch ($Command.ToLower()) {
         $out = Join-Path $Data 'triage\report.txt'
         if (Test-Path $out) { Get-Content $out -Encoding UTF8 }
     }
+    'pause'    { Need-Admin; & $Py -m checkhook.collect pause @Rest }
+    'resume'   { Need-Admin; & $Py -m checkhook.collect resume }
     'config'   { & $Py -m checkhook.service show }
     'dataset'  { & $Py -m ml.make_dataset @Rest }
     'train'    { & $Py -m ml.train @Rest }

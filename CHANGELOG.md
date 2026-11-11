@@ -61,6 +61,11 @@
 - The flow CSV header is written at once and rows reach the disk at least
   every 30 s.
 
+**Collection control**
+- `checkhook pause [reason]` / `checkhook resume` (Linux and Windows): stop
+  saving training data during attack practice on the same host while detection
+  keeps running. Pauses are logged to `pauses.log`.
+
 **Other**
 - `install-capture.sh` picks the default-route interface when none is given.
 - The example config uses `eth0` instead of a machine-specific interface.

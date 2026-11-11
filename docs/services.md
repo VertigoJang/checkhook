@@ -47,6 +47,20 @@ sudo sed -i 's/^enforce: false/enforce: true/' /etc/checkhook/checkhook.yaml
 sudo systemctl restart checkhookd
 ```
 
+## 공격 실습 중 학습 데이터 수집 멈추기
+
+수집 서비스와 flow 기록은 지금 흐르는 트래픽을 정상 트래픽으로 저장합니다. 같은 컴퓨터나 같은
+네트워크에서 공격 실습을 하면 그 트래픽까지 정상으로 저장되므로, 실습 전에 멈춥니다.
+
+```bash
+sudo checkhook pause 칼리 실습      # 탐지는 계속, 학습 데이터 저장만 멈춤
+sudo checkhook resume
+```
+
+멈춘 시각과 다시 시작한 시각은 `/var/lib/checkhook/pauses.log`에 남습니다. 실습 트래픽이
+가상 머신의 내부 네트워크 안에서만 오간다면 노트북의 랜카드를 지나지 않으므로 멈추지 않아도
+됩니다.
+
 ## 시그니처 탐지기
 
 `checkhookd`는 설정 파일의 `ids:` 항목에 적힌 경보 파일을 읽습니다. Snort 3의 `alert_json`과

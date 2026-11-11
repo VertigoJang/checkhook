@@ -139,10 +139,16 @@ def main():
                 logger = FlowLogger(cap["dir"], int(cap.get("rows_per_file", 50000)),
                                     int(cap.get("keep", 100)))
                 log.info(f"flow logging -> {cap['dir']}")
+            on_flow = None
+            if logger:
+                from checkhook.collect import paused
+                def on_flow(flow):              # checkhook pause: keep detecting, stop logging
+                    if not paused():
+                        logger.write(flow)
             try:
                 ml_detector.run(iface, clf, bl, ml["threshold"], c["block_private"],
                                 ml["idle"], ml["active"], log=log.info,
-                                on_flow=logger.write if logger else None, stop=stop)
+                                on_flow=on_flow, stop=stop)
             finally:
                 if logger:
                     logger.close()
