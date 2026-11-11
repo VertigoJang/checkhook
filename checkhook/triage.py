@@ -13,19 +13,19 @@ suggestion is left to a person.
   python3 -m checkhook.triage --print-prompt
 """
 import argparse, collections, ipaddress, json, os, re, subprocess, urllib.request
-from checkhook.alerts import tail_alerts
+from checkhook.alerts import Ignore, tail_alerts
 from checkhook.policy import should_skip
 
 WINDOWS = os.name == "nt"
 
 
 # ----------------------------------------------------------------- inputs ----
-def recent_alerts(path, last, ignore_gids=()):
+def recent_alerts(path, last, ignore=None):
     """Newest `last` alerts, aggregated by signature, by source, and per source.
 
     Only alerts whose gid is not ignored count towards `src` (the sources the
     bridge would block); `per_src` keeps every alert for context."""
-    ignore = {int(g) for g in ignore_gids}
+    ignore = ignore or Ignore()
     alerts = tail_alerts(path, last)
     sig = collections.Counter(); src = collections.Counter()
     per_src = collections.defaultdict(collections.Counter)
@@ -34,7 +34,7 @@ def recent_alerts(path, last, ignore_gids=()):
         sig[key] += 1
         if al["src"]:
             per_src[al["src"]][key] += 1
-            if al.get("gid", 1) not in ignore:
+            if not ignore(al):
                 src[al["src"]] += 1
     return len(alerts), sig, src, per_src
 
@@ -344,11 +344,14 @@ def main(argv=None):
     ap.add_argument("--enforce", action="store_true", help="enforcement is on (else dry-run)")
     ap.add_argument("--ignore-gids", default="",
                     help="comma-separated Snort gids that never lead to a block (config ids.ignore_gids)")
+    ap.add_argument("--ignore-rules", default="",
+                    help='comma-separated "gid:sid" rules that never lead to a block (config ids.ignore_rules)')
     a = ap.parse_args(argv)
 
     skip = [s.strip() for s in a.skip.split(",") if s.strip()]
-    gids = [int(g) for g in a.ignore_gids.split(",") if g.strip()]
-    n, sig, src, per_src = recent_alerts(a.alert_file, a.last, gids)
+    ignore = Ignore([g for g in a.ignore_gids.split(",") if g.strip()],
+                    [r for r in a.ignore_rules.split(",") if r.strip()])
+    n, sig, src, per_src = recent_alerts(a.alert_file, a.last, ignore)
     blocked = blocked_ips(a.backend)
     flagged = flagged_ips(src, blocked, skip, a.block_private)
     ctx = local_context()

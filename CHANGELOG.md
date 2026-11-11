@@ -24,9 +24,11 @@
   with the IPs the model called false positives with high confidence.
 
 **Detection**
-- `ids.ignore_gids`: Snort generator ids (e.g. packet-decoder or protocol
-  anomaly inspectors) whose alerts never lead to a block. The triage still sees
-  them. Alerts now carry their gid.
+- `ids.ignore_gids` (default 116 decoder, 119 http_inspect, 128 ssh,
+  129 stream_tcp, 137 ssl) and `ids.ignore_rules` ("gid:sid"): alerts that
+  never lead to a block. The triage still sees them. Alerts now carry their
+  gid. On the RHEL test machine these inspectors produced most alerts and, with
+  ssl alone, 505 distinct "attacker" IPs from ordinary HTTPS traffic.
 - A source that keeps alerting is blocked again once its block expired. Before,
   each source was acted on only once per daemon run.
 

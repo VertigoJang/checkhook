@@ -12,9 +12,10 @@ block_timeout: 1h         # blocks expire on their own (checkhookd removes them)
 block_private: false      # never block private/LAN addresses unless true
 skip: []                  # IPs that must never be blocked, e.g. [192.168.0.1]
 
-ids:                      # Suricata eve.json (written by the "CheckHook Suricata" task)
+ids:                      # Suricata eve.json (written by the checkhook-suricata task)
   enabled: true
   alert_file: C:\ProgramData\CheckHook\suricata\eve.json
+  ignore_rules: []          # rules that never lead to a block, as "1:sid"
 
 ml:                       # flow classifier (nfstream + Npcap)
   enabled: true

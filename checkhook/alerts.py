@@ -38,6 +38,30 @@ def parse_alert(line):
     return None
 
 
+class Ignore:
+    """Which alerts never lead to a block: whole generators (Snort gid, e.g. the
+    packet decoder) and single rules written "gid:sid" (Suricata rules are gid 1)."""
+
+    def __init__(self, gids=(), rules=()):
+        self.gids = {int(g) for g in gids}
+        self.rules = set()
+        for r in rules:
+            g, _, s = str(r).partition(":")
+            self.rules.add((int(g), int(s)) if s else (1, int(g)))
+
+    def __call__(self, al):
+        gid = al.get("gid", 1)
+        return gid in self.gids or (gid, _int(al.get("sid"), -1)) in self.rules
+
+    def __bool__(self):
+        return bool(self.gids or self.rules)
+
+    def __str__(self):
+        parts = [f"gid {g}" for g in sorted(self.gids)]
+        parts += [f"{g}:{s}" for g, s in sorted(self.rules)]
+        return ", ".join(parts)
+
+
 def _int(v, default):
     try:
         return int(v)

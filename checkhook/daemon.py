@@ -108,7 +108,7 @@ def main():
         workers.append(supervised("ids", lambda: snort_bridge.run(
             c["ids"]["alert_file"], bl, c["skip"], c["block_private"],
             log=log.info, stop=stop, ignore_gids=c["ids"].get("ignore_gids") or [],
-            refresh=refresh), stop, log))
+            ignore_rules=c["ids"].get("ignore_rules") or [], refresh=refresh), stop, log))
 
     # ---- flows: ML + flow logging, one capture ---------------------------------
     ml, cap = c["ml"], c["capture"]

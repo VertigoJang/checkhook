@@ -100,6 +100,9 @@ def main():
         gids = c["ids"].get("ignore_gids") or []
         if gids:
             argv += ["--ignore-gids", ",".join(str(g) for g in gids)]
+        rules = c["ids"].get("ignore_rules") or []
+        if rules:
+            argv += ["--ignore-rules", ",".join(str(r) for r in rules)]
         if out:
             argv += ["--out", out]
         run(m, argv)

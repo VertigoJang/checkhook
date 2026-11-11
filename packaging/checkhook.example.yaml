@@ -16,6 +16,9 @@ skip: []                  # IPs that must never be blocked, e.g. [192.168.0.1]  
 ids:                      # signature detector: Snort 3 alert_json or Suricata eve.json
   enabled: true
   alert_file: /var/log/checkhook/snort/alert_json.txt   # Suricata: /var/log/suricata/eve.json
+  # alerts that never lead to a block (the triage still sees them)
+  ignore_gids: [116, 119, 128, 129, 137]   # Snort protocol-anomaly inspectors
+  ignore_rules: []                         # single rules as "gid:sid", e.g. ["1:254"]
 
 ml:                       # flow classifier: nfstream + RandomForest
   enabled: true
