@@ -1,8 +1,8 @@
 """Write finished flows to rotating CSV files (ML training data).
 
-Used by checkhookd where tcpdump/checkhook-capture isn't available (Windows): the
-same nfstream statistical features the model uses, plus addressing columns so
-ml.make_dataset can label the rows later. No payload is ever stored.
+The same nfstream statistical features the model uses, plus addressing columns
+so ml.make_dataset can label the rows later. No payload is ever stored. Much
+smaller than raw packets, so weeks of normal traffic fit in a few GB.
 
 Files: <dir>/flows-YYYYmmdd-HHMMSS.csv, a new file every `rows_per_file` flows,
 only the newest `keep` files are kept.

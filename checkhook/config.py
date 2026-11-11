@@ -41,8 +41,12 @@ DEFAULTS = {
                "last": 500, "model": "qwen2.5:7b",
                "host": "http://localhost:11434", "lang": "English",
                "out": "/var/lib/checkhook/triage/report.txt"},
-    # flow logging for ML training data (Windows; Linux uses checkhook-capture)
-    "capture": {"enabled": False, "dir": "/var/lib/checkhook/flows"},
+    # flow logging for ML training data: every finished flow's features go to
+    # CSV (a few hundred bytes per flow, versus megabytes of raw packets).
+    # enabled: true / false / auto (= on when nfstream is installed).
+    # rows_per_file x keep bounds the disk use (~20 MB per 50000 rows).
+    "capture": {"enabled": "auto", "dir": "/var/lib/checkhook/flows",
+                "rows_per_file": 50000, "keep": 100},
     "daemon": {"expiry_interval": 60, "triage_interval": 3600},
 }
 
@@ -53,7 +57,7 @@ if WINDOWS:   # same structure, Windows locations and enforcement
     DEFAULTS["ml"]["model"] = os.path.join(PROGRAMDATA, "model.joblib")
     DEFAULTS["triage"]["alert_file"] = DEFAULTS["ids"]["alert_file"]
     DEFAULTS["triage"]["out"] = os.path.join(PROGRAMDATA, "triage", "report.txt")
-    DEFAULTS["capture"] = {"enabled": True, "dir": os.path.join(PROGRAMDATA, "flows")}
+    DEFAULTS["capture"].update({"enabled": True, "dir": os.path.join(PROGRAMDATA, "flows")})
 
 
 def _merge(base, over):

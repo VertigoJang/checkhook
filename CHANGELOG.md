@@ -52,6 +52,12 @@
   `benign-<start time>.pcapNN`; old files are removed only to stay near the size
   cap (default 4 GB, `CHECKHOOK_CAPTURE_GB`). Reinstall with
   `install-capture.sh` to switch.
+- Flow logging now also runs on Linux (`capture.enabled: auto`, on when
+  nfstream is installed): one CSV row of features per finished flow. Raw
+  headers on the test machine grew by about 1 GB per hour of heavy use, so the
+  packet ring only ever held the last hour or so; flow rows are what builds a
+  multi-week benign set. `capture.rows_per_file` and `capture.keep` bound the
+  disk use (default ~2 GB). The self-test reports how many flows are logged.
 
 **Other**
 - `install-capture.sh` picks the default-route interface when none is given.

@@ -33,6 +33,12 @@ xdp:                      # XDP enforcement (used when backend: xdp)
   iface: eth0
   mode: generic            # generic works on any NIC (Wi-Fi too); native needs driver support
 
+capture:                  # flow features for ML training data, as CSV (no payload stored)
+  enabled: auto           # auto = on when nfstream is installed
+  dir: /var/lib/checkhook/flows
+  rows_per_file: 50000    # ~20 MB per file
+  keep: 100               # newest files kept (~2 GB, several million flows)
+
 triage:                   # "Check": read-only LLM review of flagged IPs (local Ollama); never blocks or unblocks
   enabled: true
   alert_file: /var/log/checkhook/snort/alert_json.txt   # same file as ids.alert_file

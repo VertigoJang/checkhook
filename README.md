@@ -162,14 +162,20 @@ powershell -ExecutionPolicy Bypass -File packaging\windows\install.ps1
 
 ## 머신러닝 모델 학습
 
-머신러닝 탐지는 학습된 모델이 있어야 켜집니다. `install-capture.sh`가 설치하는 수집 서비스는
-패킷 헤더만 `/var/lib/checkhook/`에 저장하며, 패킷 내용은 저장하지 않습니다. 공격 트래픽은
-외부와 분리된 실습망에서 따로 수집해야 합니다. 윈도우에서는 `checkhookd`가 flow 통계를
-CSV로 기록하며, 학습 방법은 `docs/windows.md`에 있습니다.
+머신러닝 탐지는 학습된 모델이 있어야 켜집니다. 학습용 정상 트래픽은 두 가지 형태로 모입니다.
+
+- flow 기록: `checkhookd`가 끝난 연결(flow)마다 통계 특징을 `/var/lib/checkhook/flows/`에
+  CSV로 남깁니다. 연결 하나에 수백 바이트라 몇 주 분량도 몇 GB 안에 들어갑니다. nfstream이
+  설치되어 있으면 자동으로 켜집니다(`capture.enabled: auto`). 학습에는 이쪽을 씁니다.
+- 패킷 헤더: `install-capture.sh`가 설치하는 수집 서비스가 패킷 헤더를 저장합니다. 트래픽이
+  많으면 한 시간에 1 GB 가까이 쌓이므로 최근 몇 시간 분량만 남습니다(기본 최대 4 GB).
+  나중에 특징을 바꿔 다시 뽑을 때 쓰는 원본입니다.
+
+어느 쪽이든 패킷 내용은 저장하지 않습니다. 공격 트래픽은 외부와 분리된 실습망에서 따로
+수집해야 합니다.
 
 ```bash
-mergecap -w ~/checkhook-data/benign_train.pcap /var/lib/checkhook/benign*.pcap*
-python3 -m ml.make_dataset --pcap ~/checkhook-data/benign_train.pcap --label 0 --out ~/checkhook-data/benign.csv
+python3 -m ml.make_dataset --flows "/var/lib/checkhook/flows/*.csv" --label 0 --out ~/checkhook-data/benign.csv
 python3 -m ml.make_dataset --pcap ~/checkhook-data/attack.pcap --attacker-ip <공격자 IP> --out ~/checkhook-data/attack.csv
 checkhook train --data ~/checkhook-data/benign.csv --data ~/checkhook-data/attack.csv --out ~/checkhook-data/checkhook.joblib
 checkhook eval  --model ~/checkhook-data/checkhook.joblib --data <학습에 쓰지 않은 정상 트래픽>.csv --target-fpr 0.01

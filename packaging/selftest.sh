@@ -132,6 +132,21 @@ else
   echo "  [ -- ] checkhook-capture not installed"
 fi
 
+FLOWDIR="$(printf '%s' "$CONF_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["flows"])')"
+if python3 -c 'import nfstream' 2>/dev/null; then
+  NEWEST="$(ls -t "$FLOWDIR"/flows-*.csv 2>/dev/null | head -1)"
+  if [[ -n "$NEWEST" ]]; then
+    ROWS=$(( $(cat "$FLOWDIR"/flows-*.csv | wc -l) - $(ls "$FLOWDIR"/flows-*.csv | wc -l) ))
+    AGE=$(( $(date +%s) - $(stat -c %Y "$NEWEST") ))
+    (( AGE < 900 )) && pass "flow log: $ROWS flows in $FLOWDIR (newest ${AGE}s ago)" \
+      || warn "flow log: newest file is ${AGE}s old ($NEWEST)"
+  else
+    warn "flow log: no CSV in $FLOWDIR yet (written as flows finish; journalctl -u checkhookd | grep flows)"
+  fi
+else
+  warn "nfstream not installed: no flow log and no ML (pip install nfstream)"
+fi
+
 # ----------------------------------------------------------- check (LLM) ----
 section "check (LLM triage)"
 CTX="$(python3 -m checkhook.diag network)"

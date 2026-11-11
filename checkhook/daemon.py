@@ -113,7 +113,12 @@ def main():
             local=LocalInfra() if c.get("protect_local", True) else None), stop, log))
 
     # ---- flows: ML + flow logging, one capture ---------------------------------
-    ml, cap = c["ml"], c["capture"]
+    ml, cap = c["ml"], dict(c["capture"])
+    if str(cap.get("enabled")).lower() == "auto":
+        import importlib.util
+        cap["enabled"] = importlib.util.find_spec("nfstream") is not None
+        if not cap["enabled"]:
+            log.info("flow logging off: nfstream is not installed (pip install nfstream)")
     model_ok = ml.get("enabled", True) and os.path.exists(ml["model"])
     if ml.get("enabled", True) and not model_ok:
         log.info(f"ml: no model at {ml['model']} yet — classification off")
@@ -131,7 +136,8 @@ def main():
             logger = None
             if cap.get("enabled"):
                 from checkhook.flowlog import FlowLogger
-                logger = FlowLogger(cap["dir"])
+                logger = FlowLogger(cap["dir"], int(cap.get("rows_per_file", 50000)),
+                                    int(cap.get("keep", 100)))
                 log.info(f"flow logging -> {cap['dir']}")
             try:
                 ml_detector.run(iface, clf, bl, ml["threshold"], c["block_private"],
