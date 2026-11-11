@@ -58,6 +58,8 @@
   packet ring only ever held the last hour or so; flow rows are what builds a
   multi-week benign set. `capture.rows_per_file` and `capture.keep` bound the
   disk use (default ~2 GB). The self-test reports how many flows are logged.
+- The flow CSV header is written at once and rows reach the disk at least
+  every 30 s.
 
 **Other**
 - `install-capture.sh` picks the default-route interface when none is given.

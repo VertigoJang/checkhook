@@ -34,7 +34,9 @@ class FlowLogger:
         self._f = open(path, "w", newline="", encoding="utf-8")
         self._w = csv.writer(self._f)
         self._w.writerow(META + FEATURES)
+        self._f.flush()
         self._rows = 0
+        self._flushed = time.monotonic()
         for old in sorted(glob.glob(os.path.join(self.dir, "flows-*.csv")))[:-self.keep]:
             try:
                 os.unlink(old)
@@ -50,8 +52,9 @@ class FlowLogger:
         row += [getattr(flow, f, 0) or 0 for f in FEATURES]
         self._w.writerow(row)
         self._rows += 1
-        if self._rows % 100 == 0:
+        if self._rows % 100 == 0 or time.monotonic() - self._flushed > 30:
             self._f.flush()
+            self._flushed = time.monotonic()
 
     def close(self):
         if self._f:

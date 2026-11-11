@@ -136,7 +136,8 @@ FLOWDIR="$(printf '%s' "$CONF_JSON" | python3 -c 'import json,sys; print(json.lo
 if python3 -c 'import nfstream' 2>/dev/null; then
   NEWEST="$(ls -t "$FLOWDIR"/flows-*.csv 2>/dev/null | head -1)"
   if [[ -n "$NEWEST" ]]; then
-    ROWS=$(( $(cat "$FLOWDIR"/flows-*.csv | wc -l) - $(ls "$FLOWDIR"/flows-*.csv | wc -l) ))
+    ROWS=0
+    for f in "$FLOWDIR"/flows-*.csv; do n=$(wc -l <"$f"); (( n > 1 )) && ROWS=$(( ROWS + n - 1 )); done
     AGE=$(( $(date +%s) - $(stat -c %Y "$NEWEST") ))
     (( AGE < 900 )) && pass "flow log: $ROWS flows in $FLOWDIR (newest ${AGE}s ago)" \
       || warn "flow log: newest file is ${AGE}s old ($NEWEST)"
