@@ -11,6 +11,7 @@ backend: winfw            # Windows Defender Firewall rules (group "CheckHook")
 block_timeout: 1h         # blocks expire on their own (checkhookd removes them)
 block_private: false      # never block private/LAN addresses unless true
 skip: []                  # IPs that must never be blocked, e.g. [192.168.0.1]
+protect_local: true       # never block this host's current DNS servers, gateway, own addresses
 
 ids:                      # Suricata eve.json (written by the checkhook-suricata task)
   enabled: true

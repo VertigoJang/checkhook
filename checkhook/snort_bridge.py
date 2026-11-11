@@ -55,7 +55,7 @@ def follow(path, from_start, stop=None):
 
 def run(alert_file, bl=None, skip=(), block_private=False, from_start=False,
         log=print, stop=None, ignore_gids=(), refresh=3600, clock=time.monotonic,
-        ignore_rules=()):
+        ignore_rules=(), local=None):
     """Follow an IDS alert file and block (bl given) or only report sources.
 
     bl: a Blocklist to enforce with, or None for dry-run.
@@ -63,6 +63,8 @@ def run(alert_file, bl=None, skip=(), block_private=False, from_start=False,
     ignore_gids / ignore_rules: Snort generator ids (e.g. the packet decoder)
       and single "gid:sid" rules that never lead to a block; their alerts are
       still kept for the triage.
+    local: optional container of this host's own infrastructure IPs (DNS
+      servers, gateway, own addresses; see netinfo.LocalInfra), never blocked.
     refresh: seconds after which a source that keeps alerting is added again
       (= block_timeout, so an attacker is blocked again once its block expired).
     """
@@ -79,7 +81,7 @@ def run(alert_file, bl=None, skip=(), block_private=False, from_start=False,
         if src in seen and now - seen[src] < refresh:
             continue
         seen[src] = now
-        if src in skip or should_skip(src, block_private):
+        if src in skip or should_skip(src, block_private) or (local is not None and src in local):
             if bl is None:
                 log(f"[skip]        {src}")
             continue

@@ -12,13 +12,14 @@ backend: nft              # enforcement backend (nft | xdp) — xdp: packaging/i
 block_timeout: 1h         # how long a block lasts before it expires on its own
 block_private: false      # never block RFC1918/LAN addresses unless true
 skip: []                  # IPs that must never be blocked, e.g. [192.168.0.1]  (your gateway)
+protect_local: true       # never block this host's current DNS servers, gateway, own addresses
 
 ids:                      # signature detector: Snort 3 alert_json or Suricata eve.json
   enabled: true
   alert_file: /var/log/checkhook/snort/alert_json.txt   # Suricata: /var/log/suricata/eve.json
   # alerts that never lead to a block (the triage still sees them)
   ignore_gids: [116, 119, 128, 129, 137]   # Snort protocol-anomaly inspectors
-  ignore_rules: []                         # single rules as "gid:sid", e.g. ["1:254"]
+  ignore_rules: ["1:402", "1:408"]         # single rules "gid:sid": ICMP replies to our own traffic
 
 ml:                       # flow classifier: nfstream + RandomForest
   enabled: true

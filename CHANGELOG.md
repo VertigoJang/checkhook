@@ -29,6 +29,13 @@
   never lead to a block. The triage still sees them. Alerts now carry their
   gid. On the RHEL test machine these inspectors produced most alerts and, with
   ssl alone, 505 distinct "attacker" IPs from ordinary HTTPS traffic.
+- `protect_local` (default on): never block this host's current DNS servers,
+  default gateway and own addresses; re-read every minute so it follows a
+  laptop between networks. On the test machine the DNS-spoof rule 1:254 fired
+  on four different resolvers over two networks, which a static skip list
+  cannot keep up with.
+- Default `ids.ignore_rules`: 1:402 (ICMP port unreachable) and 1:408 (ICMP
+  echo reply), replies to this host's own traffic.
 - A source that keeps alerting is blocked again once its block expired. Before,
   each source was acted on only once per daemon run.
 

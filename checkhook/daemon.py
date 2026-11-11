@@ -104,11 +104,13 @@ def main():
     if c["ids"].get("enabled", True):
         from checkhook import snort_bridge
         from checkhook.blocklist import parse_timeout
+        from checkhook.netinfo import LocalInfra
         refresh = parse_timeout(c["block_timeout"]) or 3600
         workers.append(supervised("ids", lambda: snort_bridge.run(
             c["ids"]["alert_file"], bl, c["skip"], c["block_private"],
             log=log.info, stop=stop, ignore_gids=c["ids"].get("ignore_gids") or [],
-            ignore_rules=c["ids"].get("ignore_rules") or [], refresh=refresh), stop, log))
+            ignore_rules=c["ids"].get("ignore_rules") or [], refresh=refresh,
+            local=LocalInfra() if c.get("protect_local", True) else None), stop, log))
 
     # ---- flows: ML + flow logging, one capture ---------------------------------
     ml, cap = c["ml"], c["capture"]

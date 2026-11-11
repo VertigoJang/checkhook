@@ -18,6 +18,9 @@ DEFAULTS = {
     "block_timeout": "1h",
     "block_private": False,
     "skip": [],
+    # never block this host's current DNS servers, default gateway and own
+    # addresses (re-read every minute, so it follows the laptop between networks)
+    "protect_local": True,
     # signature IDS: Snort 3 alert_json or Suricata eve.json (auto-detected).
     # Older configs call this section "snort:"; that is still accepted.
     # Alerts that never lead to a block (the triage still sees them):
@@ -26,8 +29,10 @@ DEFAULTS = {
     #                  128 ssh, 129 stream_tcp, 137 ssl. Kept: 1/3 rules,
     #                  112 arp_spoof, 122 port_scan.
     #   ignore_rules - single rules as "gid:sid" (Suricata rules are gid 1).
+    #                  Default: 1:402 ICMP port unreachable and 1:408 ICMP echo
+    #                  reply, i.e. replies to this host's own traffic.
     "ids": {"enabled": True, "alert_file": "/var/log/checkhook/snort/alert_json.txt",
-            "ignore_gids": [116, 119, 128, 129, 137], "ignore_rules": []},
+            "ignore_gids": [116, 119, 128, 129, 137], "ignore_rules": ["1:402", "1:408"]},
     "ml": {"enabled": True, "iface": "eth0",
            "model": "/var/lib/checkhook/model.joblib",
            "threshold": 0.9, "idle": 15, "active": 120},

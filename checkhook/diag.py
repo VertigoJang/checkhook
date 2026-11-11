@@ -36,7 +36,7 @@ def main(argv=None):
         assert p('{"event_type":"flow"}') is None
         print("ok")
     elif cmd == "network":
-        from checkhook.triage import local_context
+        from checkhook.netinfo import local_context
         c = local_context()
         print("dns=%s gateway=%s" % (",".join(c["dns"]) or "-", ",".join(c["gateway"]) or "-"))
     elif cmd == "device" and len(argv) > 1:

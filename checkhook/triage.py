@@ -12,11 +12,11 @@ suggestion is left to a person.
   python3 -m checkhook.triage --lang Korean --out report.md --skip 192.168.0.1
   python3 -m checkhook.triage --print-prompt
 """
-import argparse, collections, ipaddress, json, os, re, subprocess, urllib.request
+import argparse, collections, json, re, urllib.request
 from checkhook.alerts import Ignore, tail_alerts
 from checkhook.policy import should_skip
+from checkhook.netinfo import local_context
 
-WINDOWS = os.name == "nt"
 
 
 # ----------------------------------------------------------------- inputs ----
@@ -47,68 +47,6 @@ def blocked_ips(backend="nft"):
         return bl.ips() if bl.exists() else []
     except Exception:
         return []
-
-
-def _run(cmd, timeout=10):
-    try:
-        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout).stdout
-    except Exception:
-        return ""
-
-
-def _ipv4s(text):
-    out = []
-    for tok in re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", text or ""):
-        try:
-            ipaddress.IPv4Address(tok)
-        except ValueError:
-            continue
-        if tok not in out:
-            out.append(tok)
-    return out
-
-
-def local_context():
-    """This host's DNS servers, default gateways and own IPv4 addresses.
-
-    Best effort: anything that can't be read is left empty."""
-    dns, gw, own = [], [], []
-    if WINDOWS:
-        ps = ["powershell", "-NoProfile", "-Command"]
-        dns = _ipv4s(_run(ps + ["Get-DnsClientServerAddress -AddressFamily IPv4 | "
-                                "ForEach-Object { $_.ServerAddresses }"]))
-        gw = _ipv4s(_run(ps + ["Get-NetRoute -DestinationPrefix 0.0.0.0/0 "
-                               "-ErrorAction SilentlyContinue | ForEach-Object { $_.NextHop }"]))
-        own = _ipv4s(_run(ps + ["Get-NetIPAddress -AddressFamily IPv4 | "
-                                "ForEach-Object { $_.IPAddress }"]))
-    else:
-        for f in ("/etc/resolv.conf", "/run/systemd/resolve/resolv.conf"):
-            try:
-                with open(f, encoding="utf-8", errors="replace") as fh:
-                    for line in fh:
-                        if line.startswith("nameserver"):
-                            dns += [ip for ip in _ipv4s(line) if ip not in dns]
-            except OSError:
-                pass
-        # systemd-resolved stub (127.0.0.53) hides the real servers; ask NetworkManager too
-        dns += [ip for ip in _ipv4s(_run(["nmcli", "-t", "-f", "IP4.DNS", "dev", "show"]))
-                if ip not in dns]
-        try:
-            for r in json.loads(_run(["ip", "-j", "-4", "route", "show", "default"]) or "[]"):
-                if r.get("gateway") and r["gateway"] not in gw:
-                    gw.append(r["gateway"])
-        except ValueError:
-            pass
-        try:
-            for link in json.loads(_run(["ip", "-j", "-4", "addr"]) or "[]"):
-                for a in link.get("addr_info", []):
-                    if a.get("local") and a["local"] not in own:
-                        own.append(a["local"])
-        except ValueError:
-            pass
-    dns = [ip for ip in dns if not ipaddress.IPv4Address(ip).is_loopback]
-    own = [ip for ip in own if not ipaddress.IPv4Address(ip).is_loopback]
-    return {"dns": dns, "gateway": gw, "own": own}
 
 
 # ----------------------------------------------------------------- analysis --
@@ -229,8 +167,8 @@ TEXT = {
         "mode_on": "차단 켜짐", "mode_off": "기록만 함, enforce: false",
         "summary": "경보 {n}건, 차단 대상 IP {f}개 ({mode})",
         "infra": "## 1. 이 컴퓨터의 네트워크 장비와 겹치는 IP",
-        "infra_note": "아래 IP는 이 컴퓨터가 쓰는 DNS 서버, 게이트웨이, 자기 주소입니다. "
-                      "차단하면 인터넷이 끊길 수 있으므로 오탐으로 보고 예외 목록에 넣는 것을 권합니다.",
+        "infra_note": "아래 IP는 이 컴퓨터가 지금 쓰는 DNS 서버, 게이트웨이, 자기 주소이므로 오탐입니다. "
+                      "`protect_local: true`(기본값)이면 차단되지 않습니다. 이 설정을 껐다면 예외 목록에 넣습니다.",
         "infra_none": "차단 대상 중 이 컴퓨터의 DNS 서버, 게이트웨이, 자기 주소는 없습니다.",
         "llm": "## 2. LLM 판단 ({model})",
         "llm_fail": "LLM에 연결하지 못해 이 부분은 비어 있습니다: {e}",
@@ -254,8 +192,8 @@ TEXT = {
         "mode_on": "enforcing", "mode_off": "log only, enforce: false",
         "summary": "{n} alerts, {f} flagged IPs ({mode})",
         "infra": "## 1. Flagged IPs that are this host's own network infrastructure",
-        "infra_note": "These are this host's DNS servers, gateway or own addresses. Blocking them "
-                      "can cut the connection; treat them as false positives.",
+        "infra_note": "These are this host's current DNS servers, gateway or own addresses, so false "
+                      "positives. With `protect_local: true` (default) they are never blocked.",
         "infra_none": "No flagged IP is this host's DNS server, gateway or own address.",
         "llm": "## 2. LLM review ({model})",
         "llm_fail": "Could not reach the LLM, so this part is empty: {e}",
