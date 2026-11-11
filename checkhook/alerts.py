@@ -11,7 +11,11 @@ import os
 
 
 def parse_alert(line):
-    """Return {"src", "sid", "msg", "ids"} for an alert line, else None."""
+    """Return {"src", "gid", "sid", "msg", "ids"} for an alert line, else None.
+
+    gid: Snort generator id (1 = text rules, 3 = shared-object rules, others
+    are built-in inspectors such as the packet decoder or port_scan). Suricata
+    rules use gid 1."""
     line = line.strip()
     if not line or line[0] != "{":
         return None
@@ -25,12 +29,20 @@ def parse_alert(line):
         if ev.get("event_type") != "alert":
             return None
         al = ev.get("alert") or {}
-        return {"src": ev.get("src_ip"), "sid": al.get("signature_id"),
-                "msg": al.get("signature", ""), "ids": "suricata"}
+        return {"src": ev.get("src_ip"), "gid": _int(al.get("gid"), 1),
+                "sid": al.get("signature_id"), "msg": al.get("signature", ""),
+                "ids": "suricata"}
     if "src_addr" in ev or "sid" in ev:          # Snort 3 alert_json
-        return {"src": ev.get("src_addr"), "sid": ev.get("sid"),
-                "msg": ev.get("msg", ""), "ids": "snort"}
+        return {"src": ev.get("src_addr"), "gid": _int(ev.get("gid"), 1),
+                "sid": ev.get("sid"), "msg": ev.get("msg", ""), "ids": "snort"}
     return None
+
+
+def _int(v, default):
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
 
 
 def tail_alerts(path, last, max_bytes=64 * 1024 * 1024, block=1024 * 1024):

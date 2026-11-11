@@ -54,22 +54,29 @@ def follow(path, from_start, stop=None):
 
 
 def run(alert_file, bl=None, skip=(), block_private=False, from_start=False,
-        log=print, stop=None):
+        log=print, stop=None, ignore_gids=(), refresh=3600, clock=time.monotonic):
     """Follow an IDS alert file and block (bl given) or only report sources.
 
     bl: a Blocklist to enforce with, or None for dry-run.
     stop: optional threading.Event to end the loop (checked between lines).
+    ignore_gids: Snort generator ids that never lead to a block (e.g. packet
+      decoder anomalies); their alerts are still kept for the triage.
+    refresh: seconds after which a source that keeps alerting is added again
+      (= block_timeout, so an attacker is blocked again once its block expired).
     """
-    seen = set(); skip = set(skip)
-    log(f"[*] tail {alert_file}")
+    seen = {}; skip = set(skip); ignore = {int(g) for g in ignore_gids}
+    log(f"[*] tail {alert_file}" + (f" (ignoring gid {sorted(ignore)})" if ignore else ""))
     for line in follow(alert_file, from_start, stop):
         al = parse_alert(line)                 # Snort alert_json or Suricata eve.json
         if not al:
             continue
         src = al["src"]
-        if not src or src in seen:
+        if not src or al.get("gid", 1) in ignore:
             continue
-        seen.add(src)
+        now = clock()
+        if src in seen and now - seen[src] < refresh:
+            continue
+        seen[src] = now
         if src in skip or should_skip(src, block_private):
             if bl is None:
                 log(f"[skip]        {src}")

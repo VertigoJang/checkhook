@@ -34,7 +34,7 @@ echo "  checkhook : $VER"
 echo "  distro    : $(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-unknown}") (family: $(distro_family))"
 echo "  kernel    : $(uname -r)"
 echo "  python    : $(python3 --version 2>&1)"
-echo "  virt      : $(systemd-detect-virt 2>/dev/null || echo none)"
+echo "  virt      : $(systemd-detect-virt 2>/dev/null; true)"
 python3 -c 'import sys; sys.exit(sys.version_info < (3, 9))' \
   && pass "python >= 3.9" || fail "python 3.9 or newer needed"
 python3 -c 'import yaml' 2>/dev/null && pass "PyYAML" \

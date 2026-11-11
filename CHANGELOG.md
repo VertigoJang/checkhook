@@ -15,6 +15,20 @@
 - If Ollama is unreachable the report is still written (local part only) and
   the run exits non-zero.
 - Reports in Korean when `triage.lang: Korean`.
+- The model answers in JSON (one verdict per reviewed IP: false positive,
+  attack or unclear, with confidence and reason). Verdicts about IPs that were
+  not under review are dropped, so the report never states things about the
+  gateway, the skip list or made-up addresses. The host's own DNS servers and
+  gateway are decided without the model and are not sent for review.
+- The skip suggestion comes in two lines: certain (local infrastructure) and
+  with the IPs the model called false positives with high confidence.
+
+**Detection**
+- `ids.ignore_gids`: Snort generator ids (e.g. packet-decoder or protocol
+  anomaly inspectors) whose alerts never lead to a block. The triage still sees
+  them. Alerts now carry their gid.
+- A source that keeps alerting is blocked again once its block expired. Before,
+  each source was acted on only once per daemon run.
 
 **Testing**
 - `packaging/selftest.sh` and `packaging/windows/selftest.ps1`: end-to-end

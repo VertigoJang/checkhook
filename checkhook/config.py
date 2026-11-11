@@ -20,7 +20,10 @@ DEFAULTS = {
     "skip": [],
     # signature IDS: Snort 3 alert_json or Suricata eve.json (auto-detected).
     # Older configs call this section "snort:"; that is still accepted.
-    "ids": {"enabled": True, "alert_file": "/var/log/checkhook/snort/alert_json.txt"},
+    # ignore_gids: Snort generator ids that never lead to a block (alerts are
+    # still shown to the triage). Text rules are gid 1.
+    "ids": {"enabled": True, "alert_file": "/var/log/checkhook/snort/alert_json.txt",
+            "ignore_gids": []},
     "ml": {"enabled": True, "iface": "eth0",
            "model": "/var/lib/checkhook/model.joblib",
            "threshold": 0.9, "idle": 15, "active": 120},

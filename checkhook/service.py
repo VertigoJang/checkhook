@@ -97,6 +97,9 @@ def main():
             argv.append("--block-private")
         if c.get("enforce"):
             argv.append("--enforce")
+        gids = c["ids"].get("ignore_gids") or []
+        if gids:
+            argv += ["--ignore-gids", ",".join(str(g) for g in gids)]
         if out:
             argv += ["--out", out]
         run(m, argv)
