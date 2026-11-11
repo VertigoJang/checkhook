@@ -61,6 +61,13 @@
 - The flow CSV header is written at once and rows reach the disk at least
   every 30 s.
 
+**Shutdown**
+- Fixed: stopping or restarting checkhookd took 90 s and ended in SIGKILL once
+  flow logging was on, because nfstream's capture worker processes ignore
+  SIGTERM and Python waited for them at exit. The daemon now flushes the flow
+  CSV, kills its own worker processes and exits at once; the unit also sets
+  `TimeoutStopSec=15`.
+
 **Collection control**
 - `checkhook pause [reason]` / `checkhook resume` (Linux and Windows): stop
   saving training data during attack practice on the same host while detection

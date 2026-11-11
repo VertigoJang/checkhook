@@ -138,6 +138,7 @@ def main():
                 from checkhook.flowlog import FlowLogger
                 logger = FlowLogger(cap["dir"], int(cap.get("rows_per_file", 50000)),
                                     int(cap.get("keep", 100)))
+                _closers.append(logger.close)
                 log.info(f"flow logging -> {cap['dir']}")
             on_flow = None
             if logger:
@@ -182,6 +183,38 @@ def main():
         stop.set()
     log.info("checkhookd stopping")
     time.sleep(1)
+    _shutdown(log)
+
+
+_closers = []   # flushed on shutdown (e.g. the flow CSV)
+
+
+def _shutdown(log):
+    """Exit now. nfstream runs its packet meters in child processes that do not
+    react to SIGTERM; a normal interpreter exit waits for them forever and
+    systemd ends up SIGKILLing the whole service after 90 s. So: flush what we
+    write, kill our own children, and leave without waiting for them."""
+    for close in _closers:
+        try:
+            close()
+        except Exception:
+            pass
+    kids = []
+    try:
+        import psutil                      # nfstream depends on it
+        kids = psutil.Process().children(recursive=True)
+    except Exception:
+        import multiprocessing
+        kids = multiprocessing.active_children()
+    for k in kids:
+        try:
+            k.kill()
+        except Exception:
+            pass
+    if kids:
+        log.info(f"stopped {len(kids)} capture worker process(es)")
+    logging.shutdown()
+    os._exit(0)
 
 
 if __name__ == "__main__":

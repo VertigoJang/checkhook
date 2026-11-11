@@ -18,6 +18,8 @@ RestartSec=5
 # exit status 2 = misconfiguration (e.g. XDP backend not loaded): don't loop
 RestartPreventExitStatus=2
 Nice=5
+# the daemon exits within a few seconds on stop; never wait the default 90 s
+TimeoutStopSec=15
 
 [Install]
 WantedBy=multi-user.target
