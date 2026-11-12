@@ -101,6 +101,7 @@ def main():
     workers = []
     from checkhook.status import Board
     board = Board(c)
+    board.restore()
 
     # ---- ids ------------------------------------------------------------------
     if c["ids"].get("enabled", True):
@@ -169,8 +170,23 @@ def main():
 
     # ---- triage (separate process: a hung or crashing LLM call can't hurt us) --
     if c["triage"].get("enabled", True):
+        def due():
+            # wall-clock schedule from the report's age: survives restarts and
+            # suspend (an Event.wait timer stops while a laptop sleeps)
+            try:
+                age = time.time() - os.path.getmtime(c["triage"]["out"])
+            except OSError:
+                return True
+            return age >= c["daemon"]["triage_interval"]
+
         def triage():
-            while not stop.wait(c["daemon"]["triage_interval"]):
+            if stop.wait(120):                    # let the detectors settle after start
+                return
+            while True:
+                if not due():
+                    if stop.wait(60):
+                        return
+                    continue
                 cmd = [sys.executable, "-m", "checkhook.service", "triage"]
                 if a.config:
                     cmd += ["--config", a.config]
@@ -178,6 +194,12 @@ def main():
                                    cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                 tail = (r.stdout + r.stderr).strip().splitlines()[-1:] or [""]
                 log.info(f"triage exit {r.returncode}: {tail[0]}")
+                if not due():
+                    continue
+                # the run did not refresh the report (e.g. Ollama down and no file
+                # written): try again in 10 minutes instead of every minute
+                if stop.wait(600):
+                    return
         workers.append(supervised("triage", triage, stop, log))
 
     # ---- status (desktop app, checkhook stats) --------------------------------

@@ -74,10 +74,28 @@ class Board:
         self.flow_logging = False
         self.services = {}
 
+    def restore(self, path=None):
+        """Keep today's counts and flagged IPs across daemon restarts."""
+        try:
+            old = read(path)
+        except Exception:
+            return
+        if old.get("day") != self.day:
+            return
+        with self.lock:
+            self.counts.update(old.get("today") or {})
+            for f in old.get("flagged") or []:
+                ip = f.pop("ip", None)
+                if ip:
+                    self.flagged[ip] = f
+            for a in reversed(old.get("alerts") or []):
+                self.alerts.append(a)
+
     def _rollover(self):
         today = datetime.date.today().isoformat()
         if today != self.day:
             self.day, self.counts = today, collections.Counter()
+            self.flagged = {}
 
     def alert(self, al, action):
         """action: blocked | would-block | skip | ignored | recent (already acted on)."""

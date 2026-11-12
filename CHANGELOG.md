@@ -77,6 +77,14 @@
   block and would-block counts, recent alerts with the action taken, flow
   count, services, blocklist.
 - `checkhook stats`: the same summary in the terminal.
+- Today's counts, flagged IPs and recent alerts survive daemon restarts.
+
+**Triage schedule**
+- Fixed: the hourly LLM review only ran after a full hour of uninterrupted
+  uptime, and its timer stopped while a laptop was suspended, so on the test
+  machine the report was a day old. It is now scheduled by the report's age
+  (checked every minute, first run 2 minutes after start), retrying after
+  10 minutes if a run produced no report.
 - Menu entries: "CheckHook" opens the app, "CheckHook (terminal)" the banner
   launcher. Windows installs PySide6 and both Start-menu shortcuts.
 
