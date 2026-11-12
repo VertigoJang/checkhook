@@ -29,10 +29,19 @@ DEFAULTS = {
     #                  128 ssh, 129 stream_tcp, 137 ssl. Kept: 1/3 rules,
     #                  112 arp_spoof, 122 port_scan.
     #   ignore_rules - single rules as "gid:sid" (Suricata rules are gid 1).
-    #                  Default: 1:402 ICMP port unreachable and 1:408 ICMP echo
-    #                  reply, i.e. replies to this host's own traffic.
+    #                  Defaults, all seen on ordinary use of the test laptop:
+    #                  1:399 1:402 1:408  ICMP host/port unreachable and echo
+    #                                     reply: replies to this host's traffic
+    #                  1:366 1:384 1:480 1:29456  informational "PING" rules:
+    #                                     being pinged is not an attack
+    #                  122:3 122:7 122:19 122:23  port_scan *sweeps* (one source,
+    #                                     many hosts): on a single host these are
+    #                                     ordinary connections to CDNs. Port
+    #                                     *scans* against this host (122:1, 122:5,
+    #                                     ...) still block.
     "ids": {"enabled": True, "alert_file": "/var/log/checkhook/snort/alert_json.txt",
-            "ignore_gids": [116, 119, 128, 129, 137], "ignore_rules": ["1:402", "1:408"]},
+            "ignore_gids": [116, 119, 128, 129, 137], "ignore_rules": ["1:399", "1:402", "1:408", "1:366", "1:384", "1:480", "1:29456",
+                             "122:3", "122:7", "122:19", "122:23"]},
     "ml": {"enabled": True, "iface": "eth0",
            "model": "/var/lib/checkhook/model.joblib",
            "threshold": 0.9, "idle": 15, "active": 120,

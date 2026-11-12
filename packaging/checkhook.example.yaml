@@ -19,7 +19,8 @@ ids:                      # signature detector: Snort 3 alert_json or Suricata e
   alert_file: /var/log/checkhook/snort/alert_json.txt   # Suricata: /var/log/suricata/eve.json
   # alerts that never lead to a block (the triage still sees them)
   ignore_gids: [116, 119, 128, 129, 137]   # Snort protocol-anomaly inspectors
-  ignore_rules: ["1:402", "1:408"]         # single rules "gid:sid": ICMP replies to our own traffic
+  # single rules "gid:sid": ICMP replies and pings, port_scan sweeps (see config.py)
+  ignore_rules: ["1:399", "1:402", "1:408", "1:366", "1:384", "1:480", "1:29456", "122:3", "122:7", "122:19", "122:23"]
 
 ml:                       # flow classifier: nfstream + RandomForest
   enabled: true

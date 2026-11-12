@@ -93,6 +93,12 @@
   instead of the one it was attached to, so switching interfaces left the old
   attachment behind.
 - local.rules: SYN flood and SSH brute-force rules (detection_filter).
+- Default `ids.ignore_rules` extended with what the test laptop raised on
+  ordinary use and on plain pings: 1:399 (ICMP host unreachable), the
+  informational PING rules 1:366/1:384/1:480/1:29456, and the port_scan sweep
+  alerts 122:3/7/19/23. Port scans against this host still block.
+- SYN-flood rule threshold raised to 1500 SYN in 2 s: at 200 a plain
+  `nmap -sS` scan already triggered it.
 
 **Desktop app**
 - `checkhook gui` (PySide6, Linux and Windows): status, alerts, blocked and
