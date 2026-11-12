@@ -49,7 +49,7 @@ function Show-Banner {
         Write-Host $l[1] -ForegroundColor Red
     }
     Write-Host ''
-    Write-Host "   v$ver  —  slip the rush, land the hook" -ForegroundColor DarkGray
+    Write-Host "   v$ver" -ForegroundColor DarkGray
     Write-Host ''
 }
 

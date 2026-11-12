@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # checkhook — AI firewall front-end (detection → blocklist → kernel enforcement)
-# "fight AI with AI · 이이제이 · kernel-speed enforcement" — CHECK + HOOK
 #
 # Prints the CheckHook banner, then either shows the menu (no args) or
 # dispatches a subcommand to the underlying checkhook/benchmark modules.
@@ -34,9 +33,7 @@ banner() {
   printf ' %s%s%s%s%s\n' "$STEEL" '╚██████╗██║  ██║███████╗╚██████╗██║  ██╗' "$RED" '██║  ██║╚██████╔╝╚██████╔╝██║  ██╗' "$RST"
   printf ' %s%s%s%s%s\n' "$STEEL" ' ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝' "$RED" '╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝' "$RST"
   printf '\n'
-  printf '   %sfight AI with AI%s  %s·%s  %s이이제이%s  %s·%s  %skernel-speed enforcement%s\n' \
-         "$BOLD" "$RST" "$GREY" "$RST" "$CYAN" "$RST" "$GREY" "$RST" "$DIM" "$RST"
-  printf '   %sv%s  —  slip the rush, land the hook%s\n\n' "$GREY" "$VERSION" "$RST"
+  printf '   %sv%s%s\n\n' "$GREY" "$VERSION" "$RST"
 }
 
 menu() {

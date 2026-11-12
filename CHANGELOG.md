@@ -94,6 +94,8 @@
   keeps running. Pauses are logged to `pauses.log`.
 
 **Other**
+- The terminal banner (Linux and Windows) shows only the logo, the name and
+  the version; the taglines are gone.
 - `install-capture.sh` picks the default-route interface when none is given.
 - The example config uses `eth0` instead of a machine-specific interface.
 
