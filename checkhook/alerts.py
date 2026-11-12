@@ -33,8 +33,9 @@ def parse_alert(line):
                 "sid": al.get("signature_id"), "msg": al.get("signature", ""),
                 "ids": "suricata"}
     if "src_addr" in ev or "sid" in ev:          # Snort 3 alert_json
-        return {"src": ev.get("src_addr"), "gid": _int(ev.get("gid"), 1),
-                "sid": ev.get("sid"), "msg": ev.get("msg", ""), "ids": "snort"}
+        gid = _int(ev.get("gid"), 1)
+        return {"src": ev.get("src_addr"), "gid": gid, "sid": ev.get("sid"),
+                "msg": ev.get("msg", ""), "ids": "ml" if gid == 9000 else "snort"}
     return None
 
 

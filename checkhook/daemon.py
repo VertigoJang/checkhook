@@ -151,10 +151,16 @@ def main():
                     if not paused():
                         logger.write(flow)
                         board.flow()
+            from checkhook.blocklist import parse_timeout
+            from checkhook.netinfo import LocalInfra
             try:
                 ml_detector.run(iface, clf, bl, ml["threshold"], c["block_private"],
                                 ml["idle"], ml["active"], log=log.info,
-                                on_flow=on_flow, stop=stop)
+                                on_flow=on_flow, stop=stop, skip=c["skip"],
+                                local=LocalInfra() if c.get("protect_local", True) else None,
+                                refresh=parse_timeout(c["block_timeout"]) or 3600,
+                                on_event=board.alert,
+                                alerts=ml_detector.AlertWriter(ml["alert_file"]) if clf is not None else None)
             finally:
                 if logger:
                     logger.close()

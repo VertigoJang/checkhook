@@ -90,6 +90,9 @@ def main():
         argv = ["--alert-file", sect["alert_file"], "--last", str(sect["last"]),
                 "--model", sect["model"], "--host", sect["host"],
                 "--lang", sect["lang"], "--backend", c["backend"]]
+        ml_alerts = c["ml"].get("alert_file")
+        if ml_alerts and os.path.exists(ml_alerts):
+            argv += ["--alert-file", ml_alerts]
         skip = [str(x) for x in (c.get("skip") or [])]
         if skip:
             argv += ["--skip", ",".join(skip)]

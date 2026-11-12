@@ -4,6 +4,8 @@ The app runs as the normal user and calls this through pkexec (Linux) or from
 an elevated process (Windows). Every argument is validated here; nothing from
 the caller reaches a shell.
 
+  checkhook ctl block <ip>            block an IP now, for block_timeout (a person's decision,
+                                      e.g. after reading the LLM review; works with enforce off)
   checkhook ctl unblock <ip>          remove an IP from the blocklist now
   checkhook ctl skip-add <ip>         never block this IP (config skip:), restart
   checkhook ctl skip-remove <ip>
@@ -102,7 +104,24 @@ def main(argv=None):
     path = config.DEFAULT_PATH
     c = config.load(path)
 
-    if cmd == "unblock" and args:
+    if cmd == "block" and args:
+        ip = need_ip(args[0])
+        from checkhook.netinfo import local_context
+        try:
+            ctx = local_context()
+            infra = set(ctx["dns"] + ctx["gateway"] + ctx["own"])
+        except Exception:
+            infra = set()
+        if ip in infra or ip in [str(x) for x in c["skip"]]:
+            die(f"{ip} is this host's own DNS server/gateway/address or in skip:; not blocking it")
+        if ipaddress.IPv4Address(ip).is_loopback:
+            die("refusing to block a loopback address")
+        from checkhook.blocklist import Blocklist
+        bl = Blocklist(backend=c["backend"], default_timeout=c["block_timeout"])
+        bl.setup()
+        bl.add(ip)
+        print(f"[+] blocked {ip} for {c['block_timeout']} (manual)")
+    elif cmd == "unblock" and args:
         ip = need_ip(args[0])
         from checkhook.blocklist import Blocklist
         Blocklist(backend=c["backend"]).remove(ip)

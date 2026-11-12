@@ -68,6 +68,32 @@
   CSV, kills its own worker processes and exits at once; the unit also sets
   `TimeoutStopSec=15`.
 
+**ML detector**
+- Fixed: the ML detector ignored `skip:` and `protect_local`, and never acted
+  on a source again after its block expired. It now follows the same rules as
+  the IDS bridge.
+- ML detections are written to `ml.alert_file` in the Snort JSON format with
+  gid 9000, so the LLM triage reviews them with the IDS alerts, and they show
+  in the app and `checkhook stats`.
+
+**Human-in-the-loop blocking**
+- `checkhook ctl block <ip>` and a "선택한 IP 차단" button in the app: a person
+  blocks an IP for `block_timeout` after reading the LLM review, also with
+  `enforce: false`. Refuses this host's DNS servers, gateway, own addresses,
+  skip-listed and loopback IPs.
+- The app shows IPs currently in the kernel list as "차단 중" and the XDP
+  dropped-packet counter.
+
+**Demo mode**
+- `checkhook demo on <iface>` / `off`: move IDS, ML and XDP to an isolated lab
+  interface (e.g. a VirtualBox host-only network), with enforce off,
+  block_private on and training-data collection paused; `off` restores the
+  saved config and Snort unit.
+- Fixed: `checkhook-xdp` stop detached from the interface named in the config
+  instead of the one it was attached to, so switching interfaces left the old
+  attachment behind.
+- local.rules: SYN flood and SSH brute-force rules (detection_filter).
+
 **Desktop app**
 - `checkhook gui` (PySide6, Linux and Windows): status, alerts, blocked and
   would-be-blocked IPs with unblock and add-to-skip, the LLM report with a

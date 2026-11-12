@@ -168,9 +168,10 @@ class App(QMainWindow):
         self.t_flag = table(["IP", "처리", "횟수", "마지막", "이유"])
         v.addWidget(self.t_flag, 3)
         row = QHBoxLayout()
+        b0 = QPushButton("선택한 IP 차단"); b0.setObjectName("danger"); b0.clicked.connect(self.block)
         b1 = QPushButton("선택한 IP 차단 해제"); b1.clicked.connect(self.unblock)
         b2 = QPushButton("선택한 IP를 예외에 추가 (앞으로 차단 안 함)"); b2.clicked.connect(self.add_skip)
-        row.addWidget(b1); row.addWidget(b2); row.addStretch(1)
+        row.addWidget(b0); row.addWidget(b1); row.addWidget(b2); row.addStretch(1)
         v.addLayout(row)
         v.addSpacing(6)
         v.addWidget(QLabel("최근 경보"))
@@ -207,7 +208,9 @@ class App(QMainWindow):
         self.version.setText(f"v{s['version']}")
         self.updated.setText("갱신 " + datetime.datetime.fromtimestamp(s["written"]).strftime("%H:%M:%S"))
 
-        if s["paused"]:
+        if s.get("demo"):
+            text, color = ("시연 모드 · 차단 켜짐" if s["enforce"] else "시연 모드 · 기록만 함"), AMBER
+        elif s["paused"]:
             text, color = "학습 데이터 수집 일시정지", AMBER
         elif s["enforce"]:
             text, color = "보호 중 · 차단 켜짐", RED
@@ -241,7 +244,10 @@ class App(QMainWindow):
         self.c_blocked.note.setText("차단 예정 = 기록만 함 상태에서 차단했을 IP")
         bl = s.get("blocklist")
         self.c_list.value.setText(str(len(bl)) if bl is not None else "-")
-        self.c_list.note.setText("커널 차단 목록에 들어 있는 IP 수")
+        note = ", ".join(bl[:3]) if bl else "커널 차단 목록에 들어 있는 IP 수"
+        if s.get("xdp_dropped") is not None:
+            note += f"\nXDP가 버린 패킷 {s['xdp_dropped']:,}개"
+        self.c_list.note.setText(note)
         rep = s.get("report")
         self.c_report.value.setText(hhmm(rep["mtime"]) if rep else "없음")
         self.c_report.note.setText("한 시간마다 자동 실행")
@@ -255,9 +261,12 @@ class App(QMainWindow):
 
         # tables
         flagged = s.get("flagged", [])
+        inlist = set(s.get("blocklist") or [])
         self.t_flag.setRowCount(len(flagged))
         for r, f in enumerate(flagged):
             label, col = ACTION.get(f["action"], (f["action"], None))
+            if f["ip"] in inlist:
+                label, col = "차단 중", RED
             for c, val in enumerate([cell(f["ip"]), cell(label, col), cell(f["count"]),
                                      cell(hhmm(f["last"])), cell(f["reason"])]):
                 self.t_flag.setItem(r, c, val)
@@ -289,6 +298,16 @@ class App(QMainWindow):
             QMessageBox.information(self, "CheckHook", "먼저 표에서 IP를 하나 고르세요.")
             return None
         return self.t_flag.item(rows[0].row(), 0).text()
+
+    def block(self):
+        ip = self.selected_ip()
+        if not ip or not self.s:
+            return
+        if QMessageBox.question(
+                self, "차단",
+                f"{ip}를 지금 차단합니다 ({self.s['block_timeout']} 뒤 자동 해제).\n\n"
+                "LLM 검토 보고서에서 이 IP의 판단을 확인했나요?") == QMessageBox.Yes:
+            self.ctl(["block", ip], f"{ip} 차단 중…")
 
     def unblock(self):
         ip = self.selected_ip()

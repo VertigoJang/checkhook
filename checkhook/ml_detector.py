@@ -24,17 +24,54 @@ def attack_proba(clf, flow):
     return float(clf.predict(x)[0])
 
 
+ML_GID = 9000   # gid used for ML detections in the shared alert format
+
+
+class AlertWriter:
+    """Append ML detections as Snort-style JSON lines, so the LLM triage and
+    the alert parser treat them like any other alert (gid 9000)."""
+
+    def __init__(self, path, max_bytes=50 * 1024 * 1024):
+        import os
+        self.path, self.max = path, max_bytes
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+
+    def write(self, src, dst, port, proto, p):
+        import json, os, time
+        try:
+            if os.path.exists(self.path) and os.path.getsize(self.path) > self.max:
+                os.replace(self.path, self.path + ".1")
+            msg = f"CHECKHOOK-ML attack-like flow p={p:.2f} -> {dst}:{port}"
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                                    "gid": ML_GID, "sid": 1, "rev": 1, "msg": msg,
+                                    "src_addr": src, "dst_addr": dst, "dst_port": port,
+                                    "proto": proto, "score": round(p, 4)}) + "\n")
+        except OSError:
+            pass
+
+
 def run(iface, clf=None, bl=None, threshold=0.9, block_private=False,
-        idle=15, active=120, log=print, on_flow=None, stop=None):
+        idle=15, active=120, log=print, on_flow=None, stop=None,
+        skip=(), local=None, refresh=3600, on_event=None, alerts=None, clock=None):
     """Classify live flows on `iface`.
 
     clf: trained classifier, or None to only observe flows (e.g. for logging).
     bl:  Blocklist to enforce with, or None for dry-run.
     on_flow: optional callback(flow) for every finished flow (flow logging).
     stop: optional threading.Event; checked between flows.
+    skip / local: never-block IPs (config skip:, and this host's DNS servers,
+      gateway and own addresses); same rules as the IDS bridge.
+    refresh: seconds before a source that keeps scoring high is acted on again
+      (= block_timeout, so it is blocked again once the block expired).
+    on_event: optional callback(alert_dict, action) for the status board.
+    alerts: optional AlertWriter; every high-scoring flow is recorded there.
     """
+    import time
     from nfstream import NFStreamer
-    seen = set()
+    clock = clock or time.monotonic
+    seen = {}; skip = set(skip)
+    ev = on_event or (lambda a, act: None)
     what = f"classifying (threshold {threshold})" if clf is not None else "observing"
     log(f"[*] {what} live flows on {iface}")
     for flow in NFStreamer(source=iface, statistical_analysis=True,
@@ -49,13 +86,21 @@ def run(iface, clf=None, bl=None, threshold=0.9, block_private=False,
         if p < threshold:
             continue
         src = flow.src_ip
-        if src in seen or should_skip(src, block_private):
-            continue
-        seen.add(src)
+        al = {"src": src, "gid": ML_GID, "sid": 1, "ids": "ml",
+              "msg": f"CHECKHOOK-ML attack-like flow p={p:.2f} -> {flow.dst_ip}:{flow.dst_port}"}
+        if alerts is not None:
+            alerts.write(src, flow.dst_ip, flow.dst_port, flow.protocol, p)
+        now = clock()
+        if src in seen and now - seen[src] < refresh:
+            ev(al, "recent"); continue
+        if src in skip or should_skip(src, block_private) or (local is not None and src in local):
+            ev(al, "skip"); continue
+        seen[src] = now
         tag = "[BLOCK]" if bl is not None else "[would-block]"
         if bl is not None:
             bl.add(src)
-        log(f"{tag} {src}  (p={p:.2f} -> {flow.dst_ip}:{flow.dst_port})")
+        ev(al, "blocked" if bl is not None else "would-block")
+        log(f"{tag} {src}  (ml p={p:.2f} -> {flow.dst_ip}:{flow.dst_port})")
 
 
 def main():

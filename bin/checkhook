@@ -73,6 +73,7 @@ menu() {
     ${CYAN}pause${RST} / ${CYAN}resume${RST}    stop / restart training-data collection ${DIM}(attack practice; root)${RST}
     ${CYAN}stats${RST}             collection and detection summary
     ${CYAN}gui${RST}               open the desktop app
+    ${CYAN}demo${RST} on IFACE|off  presentation mode on an isolated lab interface ${DIM}(root)${RST}
 
     ${CYAN}version${RST} | ${CYAN}help${RST}
   ${DIM}Detectors default to --dry-run. Enforcement is never automatic.${RST}
@@ -121,6 +122,7 @@ case "$cmd" in
   stats)                    exec python3 -m checkhook.status "$@" ;;
   gui|app)                  exec python3 -m checkhook.gui "$@" ;;
   ctl)                      exec python3 -m checkhook.ctl "$@" ;;
+  demo)                     need_root; exec python3 -m checkhook.demo "$@" ;;
   *)
     printf '%sunknown command:%s %s\n\n' "$RED" "$RST" "$cmd" >&2
     menu >&2

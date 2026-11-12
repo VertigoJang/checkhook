@@ -131,6 +131,7 @@ class Board:
             return {
                 "version": __version__, "written": time.time(), "started": self.started,
                 "enforce": bool(c["enforce"]), "backend": c["backend"], "paused": paused,
+                "demo": os.path.exists(os.path.join(DATA, "demo")),
                 "protect_local": bool(c.get("protect_local", True)), "skip": list(c["skip"]),
                 "block_timeout": c["block_timeout"], "services": dict(self.services),
                 "day": self.day, "today": dict(self.counts), "flows": self.flows,
@@ -162,6 +163,13 @@ def writer(board, bl, stop, flow_dir=None, interval=5):
         except Exception:
             ips = None
         snap = board.snapshot(ips, paused())
+        if board.cfg.get("backend") == "xdp":
+            try:
+                from checkhook import xdp
+                dropped, _ = xdp.stats()
+                snap["xdp_dropped"] = dropped
+            except Exception:
+                snap["xdp_dropped"] = None
         tmp = PATH + ".tmp"
         try:
             os.makedirs(DATA, exist_ok=True)
@@ -193,6 +201,8 @@ def summary(s):
     if age > 60:
         L.append("  ! 상태 파일이 오래됐습니다. checkhookd가 멈췄을 수 있습니다: systemctl status checkhookd")
     mode = "차단 켜짐" if s["enforce"] else "기록만 함 (enforce: false)"
+    if s.get("demo"):
+        mode = "시연 모드, " + mode
     L.append(f"  모드          : {mode}, 집행 방식 {s['backend']}")
     if not s.get("flow_logging"):
         L.append("  학습 데이터   : flow 기록 꺼짐 (nfstream 없음 또는 capture.enabled: false)")
@@ -203,7 +213,10 @@ def summary(s):
     L.append(f"  오늘          : 경보 {t.get('alerts', 0):,}건, 차단 {t.get('blocked', 0)}건, "
              f"차단 예정 {t.get('would_block', 0)}건")
     if s.get("blocklist") is not None:
-        L.append(f"  차단 목록     : {len(s['blocklist'])}개 IP")
+        L.append(f"  차단 목록     : {len(s['blocklist'])}개 IP"
+                 + (f" {', '.join(s['blocklist'][:5])}" if s["blocklist"] else ""))
+    if s.get("xdp_dropped") is not None:
+        L.append(f"  XDP가 버린 패킷: {s['xdp_dropped']:,}개 (XDP를 붙인 뒤 누적)")
     for name, st in s.get("services", {}).items():
         L.append(f"  {name:<20}: {STATE_KO.get(st, st)}")
     if s.get("report"):

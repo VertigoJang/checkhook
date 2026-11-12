@@ -35,7 +35,10 @@ DEFAULTS = {
             "ignore_gids": [116, 119, 128, 129, 137], "ignore_rules": ["1:402", "1:408"]},
     "ml": {"enabled": True, "iface": "eth0",
            "model": "/var/lib/checkhook/model.joblib",
-           "threshold": 0.9, "idle": 15, "active": 120},
+           "threshold": 0.9, "idle": 15, "active": 120,
+           # ML detections in the same JSON-lines format as Snort alerts (gid 9000),
+           # read by the LLM triage together with ids.alert_file
+           "alert_file": "/var/log/checkhook/ml_alerts.json"},
     "xdp": {"iface": "eth0", "mode": "generic"},
     "triage": {"enabled": True, "alert_file": "/var/log/snort/alert_json.txt",
                "last": 500, "model": "qwen2.5:7b",
@@ -55,6 +58,7 @@ if WINDOWS:   # same structure, Windows locations and enforcement
     DEFAULTS["ids"]["alert_file"] = os.path.join(PROGRAMDATA, "suricata", "eve.json")
     DEFAULTS["ml"]["iface"] = "auto"
     DEFAULTS["ml"]["model"] = os.path.join(PROGRAMDATA, "model.joblib")
+    DEFAULTS["ml"]["alert_file"] = os.path.join(PROGRAMDATA, "logs", "ml_alerts.json")
     DEFAULTS["triage"]["alert_file"] = DEFAULTS["ids"]["alert_file"]
     DEFAULTS["triage"]["out"] = os.path.join(PROGRAMDATA, "triage", "report.txt")
     DEFAULTS["capture"].update({"enabled": True, "dir": os.path.join(PROGRAMDATA, "flows")})

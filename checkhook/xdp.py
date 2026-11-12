@@ -49,6 +49,9 @@ def need(tool, pkg):
                  "(packaging/install-xdp.sh prints the exact command for your distro)")
 
 
+IFACE_FILE = "/run/checkhook-xdp.iface"   # where the program is attached right now
+
+
 def loaded():
     return os.path.exists(BLOCK_MAP) and os.path.exists(PROG_PIN)
 
@@ -88,6 +91,11 @@ def load(iface, mode="generic"):
     except RuntimeError:
         _cleanup_pins()
         raise
+    try:
+        with open(IFACE_FILE, "w") as f:
+            f.write(iface + "\n")
+    except OSError:
+        pass
     print(f"[+] XDP attached to {iface} ({mode}); blocklist map: {BLOCK_MAP}")
 
 
@@ -100,9 +108,20 @@ def _cleanup_pins():
 
 
 def unload(iface):
+    # detach from the interface it was actually attached to (the config may
+    # already name a different one, e.g. when switching interfaces)
+    try:
+        with open(IFACE_FILE) as f:
+            iface = f.read().strip() or iface
+    except OSError:
+        pass
     if shutil.which("bpftool"):
         for mode in ("xdpgeneric", "xdpdrv", "xdp"):
             _run(["bpftool", "net", "detach", mode, "dev", iface], check=False)
+    try:
+        os.unlink(IFACE_FILE)
+    except OSError:
+        pass
     _cleanup_pins()
     print(f"[+] XDP detached from {iface}; pins removed")
 

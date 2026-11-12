@@ -20,13 +20,17 @@ from checkhook.netinfo import local_context
 
 
 # ----------------------------------------------------------------- inputs ----
-def recent_alerts(path, last, ignore=None):
+def recent_alerts(paths, last, ignore=None):
     """Newest `last` alerts, aggregated by signature, by source, and per source.
 
     Only alerts whose gid is not ignored count towards `src` (the sources the
     bridge would block); `per_src` keeps every alert for context."""
     ignore = ignore or Ignore()
-    alerts = tail_alerts(path, last)
+    if isinstance(paths, str):
+        paths = [paths]
+    alerts = []
+    for path in paths:                       # IDS alerts, then ML detections (gid 9000)
+        alerts += tail_alerts(path, last)
     sig = collections.Counter(); src = collections.Counter()
     per_src = collections.defaultdict(collections.Counter)
     for al in alerts:
@@ -99,7 +103,9 @@ def build_prompt(n, sig, src, per_src, flagged, blocked, enforce, ctx, lang):
     L.append(f"- its default gateway: {', '.join(ctx['gateway']) or 'unknown'}")
     L.append("Snort gid 1 and 3 are signature rules; other gids are built-in inspectors "
              "(packet decoder, stream, protocol anomalies, port_scan). Protocol anomalies on "
-             "ordinary HTTPS/CDN/update traffic are usually not attacks; a port scan is.\n")
+             "ordinary HTTPS/CDN/update traffic are usually not attacks; a port scan is. "
+             "gid 9000 is CheckHook's own machine-learning flow classifier; p is its "
+             "attack probability for one connection.\n")
     L.append(f"Alerts in the window: {n}. Most frequent:")
     for (g, s, m), c in sig.most_common(8):
         L.append(f"- gid={g} sid={s} \"{m}\": {c}")
@@ -267,7 +273,8 @@ def render(t, model, n, flagged, review_ips, src, enforce, hits, skip, review, l
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--alert-file", default="/var/log/checkhook/snort/alert_json.txt")
+    ap.add_argument("--alert-file", action="append", default=None,
+                    help="alert file (repeatable: IDS alerts, ML detections)")
     ap.add_argument("--last", type=int, default=500, help="use the newest N alerts")
     ap.add_argument("--model", default="qwen2.5:7b")
     ap.add_argument("--host", default="http://localhost:11434")
@@ -289,7 +296,8 @@ def main(argv=None):
     skip = [s.strip() for s in a.skip.split(",") if s.strip()]
     ignore = Ignore([g for g in a.ignore_gids.split(",") if g.strip()],
                     [r for r in a.ignore_rules.split(",") if r.strip()])
-    n, sig, src, per_src = recent_alerts(a.alert_file, a.last, ignore)
+    files = a.alert_file or ["/var/log/checkhook/snort/alert_json.txt"]
+    n, sig, src, per_src = recent_alerts(files, a.last, ignore)
     blocked = blocked_ips(a.backend)
     flagged = flagged_ips(src, blocked, skip, a.block_private)
     ctx = local_context()
