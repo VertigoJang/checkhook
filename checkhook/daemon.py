@@ -99,6 +99,8 @@ def main():
              f"({'ENFORCING' if bl else 'dry-run'}); log {log_path}")
 
     workers = []
+    from checkhook.status import Board
+    board = Board(c)
 
     # ---- ids ------------------------------------------------------------------
     if c["ids"].get("enabled", True):
@@ -110,7 +112,8 @@ def main():
             c["ids"]["alert_file"], bl, c["skip"], c["block_private"],
             log=log.info, stop=stop, ignore_gids=c["ids"].get("ignore_gids") or [],
             ignore_rules=c["ids"].get("ignore_rules") or [], refresh=refresh,
-            local=LocalInfra() if c.get("protect_local", True) else None), stop, log))
+            local=LocalInfra() if c.get("protect_local", True) else None,
+            on_event=board.alert), stop, log))
 
     # ---- flows: ML + flow logging, one capture ---------------------------------
     ml, cap = c["ml"], dict(c["capture"])
@@ -146,6 +149,7 @@ def main():
                 def on_flow(flow):              # checkhook pause: keep detecting, stop logging
                     if not paused():
                         logger.write(flow)
+                        board.flow()
             try:
                 ml_detector.run(iface, clf, bl, ml["threshold"], c["block_private"],
                                 ml["idle"], ml["active"], log=log.info,
@@ -175,6 +179,17 @@ def main():
                 tail = (r.stdout + r.stderr).strip().splitlines()[-1:] or [""]
                 log.info(f"triage exit {r.returncode}: {tail[0]}")
         workers.append(supervised("triage", triage, stop, log))
+
+    # ---- status (desktop app, checkhook stats) --------------------------------
+    from checkhook import status
+    def status_worker():
+        try:
+            readable = enforcer if (bl is not None or enforcer.exists()) else None
+        except Exception:
+            readable = None
+        status.writer(board, readable, stop,
+                      flow_dir=cap["dir"] if cap.get("enabled") else None)
+    workers.append(supervised("status", status_worker, stop, log))
 
     try:
         while not stop.wait(1):

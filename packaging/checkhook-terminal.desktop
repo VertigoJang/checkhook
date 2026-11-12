@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=CheckHook (terminal)
+GenericName=AI Firewall
+Comment=CheckHook banner and command menu in a terminal
+# Opens a terminal, prints the CheckHook banner + menu, then drops you into an
+# interactive shell inside the project (Kali-tool style).
+Exec=bash -c "cd __CHECKHOOK_DIR__ && bin/checkhook; exec bash"
+Icon=__CHECKHOOK_ICON__
+Terminal=true
+Categories=Security;Network;System;
+StartupNotify=false

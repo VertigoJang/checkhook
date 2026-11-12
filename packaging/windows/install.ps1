@@ -37,6 +37,7 @@ $SuriOut   = Join-Path $Data 'suricata'
 $DaemonTask = 'checkhookd'
 $SuriTask   = 'checkhook-suricata'
 $Shortcut  = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\CheckHook.lnk'
+$ShortcutTerm = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\CheckHook (terminal).lnk'
 
 function Say([string]$Msg, [string]$Color = 'Gray') { Write-Host $Msg -ForegroundColor $Color }
 function Fail([string]$Msg) { Write-Host "[x] $Msg" -ForegroundColor Red; exit 1 }
@@ -66,7 +67,7 @@ if ($Uninstall) {
     Remove-CheckHookTask $SuriTask
     Stop-CheckHookProcesses
     Get-NetFirewallRule -Group 'CheckHook' -ErrorAction SilentlyContinue | Remove-NetFirewallRule
-    Remove-Item $Shortcut -ErrorAction SilentlyContinue
+    Remove-Item $Shortcut, $ShortcutTerm -ErrorAction SilentlyContinue
     Say "CheckHook removed (tasks, firewall rules, shortcut). Settings and data are kept in $Data." Green
     exit 0
 }
@@ -104,6 +105,9 @@ if (-not $SkipPip) {
     if ($LASTEXITCODE -ne 0) {
         Fail "pip failed. If nfstream has no wheel for Python $ver, install Python 3.12 and run this again."
     }
+    # desktop app (optional: the firewall works without it)
+    & $Python -m pip install --upgrade --disable-pip-version-check PySide6-Essentials
+    if ($LASTEXITCODE -ne 0) { Say '[!] PySide6 could not be installed: the desktop app will not open (the firewall still works).' Yellow }
 }
 Push-Location $Root
 try {
@@ -181,12 +185,22 @@ Start-ScheduledTask -TaskName $DaemonTask
 
 # ------------------------------------------------------------------ shortcut
 $ws  = New-Object -ComObject WScript.Shell
+$psExe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+# the app (asks for administrator rights through UAC when opened)
 $lnk = $ws.CreateShortcut($Shortcut)
-$lnk.TargetPath       = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$lnk.Arguments        = "-NoExit -ExecutionPolicy Bypass -File `"$Root\packaging\windows\checkhook.ps1`""
+$lnk.TargetPath       = $psExe
+$lnk.Arguments        = "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$Root\packaging\windows\checkhook.ps1`" gui"
 $lnk.WorkingDirectory = $Root
 $lnk.IconLocation     = Join-Path $Root 'assets\checkhook.ico'
 $lnk.Description      = 'CheckHook AI firewall'
+$lnk.Save()
+# the terminal launcher (banner + menu)
+$lnk = $ws.CreateShortcut($ShortcutTerm)
+$lnk.TargetPath       = $psExe
+$lnk.Arguments        = "-NoExit -ExecutionPolicy Bypass -File `"$Root\packaging\windows\checkhook.ps1`""
+$lnk.WorkingDirectory = $Root
+$lnk.IconLocation     = Join-Path $Root 'assets\checkhook.ico'
+$lnk.Description      = 'CheckHook AI firewall (terminal)'
 $lnk.Save()
 
 Start-Sleep -Seconds 3

@@ -69,6 +69,8 @@ function Show-Menu {
     Write-Host '    restart           restart checkhookd (after editing the config) (admin)'
     Write-Host '    report            run the LLM triage now and show it     (admin)'
     Write-Host '    pause / resume    stop / restart training-data logging  (admin)'
+    Write-Host '    gui               open the desktop app                   (asks for admin)'
+    Write-Host '    stats             collection and detection summary'
     Write-Host '    config            print the effective config'
     Write-Host ''
     Write-Host '  MODEL' -ForegroundColor White
@@ -117,6 +119,12 @@ switch ($Command.ToLower()) {
         $out = Join-Path $Data 'triage\report.txt'
         if (Test-Path $out) { Get-Content $out -Encoding UTF8 }
     }
+    'gui'      {
+        $pyw = Join-Path (Split-Path $Py) 'pythonw.exe'
+        if (-not (Test-Path $pyw)) { $pyw = $Py }
+        Start-Process -FilePath $pyw -ArgumentList '-m', 'checkhook.gui' -WorkingDirectory $Root -Verb RunAs
+    }
+    'stats'    { & $Py -m checkhook.status @Rest }
     'pause'    { Need-Admin; & $Py -m checkhook.collect pause @Rest }
     'resume'   { Need-Admin; & $Py -m checkhook.collect resume }
     'config'   { & $Py -m checkhook.service show }

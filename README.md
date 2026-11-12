@@ -160,6 +160,28 @@ powershell -ExecutionPolicy Bypass -File packaging\windows\install.ps1
 설정 파일은 `C:\ProgramData\CheckHook\checkhook.yaml`입니다. 자세한 내용은
 `docs/windows.md`에 있습니다.
 
+## 데스크톱 앱
+
+설치 후 앱 메뉴의 **CheckHook**을 누르면 창이 열립니다. 윈도우에서는 시작 메뉴의 CheckHook을 누르고,
+관리자 권한 요청에 동의하면 됩니다.
+
+![CheckHook 앱](docs/figures/app-status.png)
+
+- 상태: 차단 모드, 학습 데이터 수집량, 오늘 경보·차단 수, 서비스 상태
+- 차단 · 경보: 차단했거나 차단할 뻔한 IP와 최근 경보. 선택한 IP를 차단 해제하거나 예외에 추가
+- 검토 보고서: LLM 검토 보고서를 읽고, 버튼으로 바로 검토 실행
+- 차단 켜기·끄기, 학습 데이터 수집 일시정지·재개
+
+앱은 일반 사용자 권한으로 돌고, 상태는 `checkhookd`가 몇 초마다 쓰는 상태 파일에서 읽습니다.
+차단 해제나 설정 변경처럼 시스템을 바꾸는 버튼을 누를 때만 비밀번호(리눅스는 pkexec,
+윈도우는 사용자 계정 컨트롤)를 묻습니다. 리눅스에서는 PySide6가 필요합니다.
+
+```bash
+python3 -m pip install --user PySide6-Essentials
+bash packaging/install-desktop.sh        # 앱 메뉴에 CheckHook과 CheckHook (terminal) 추가
+checkhook stats                          # 터미널에서 같은 요약 보기
+```
+
 ## 머신러닝 모델 학습
 
 머신러닝 탐지는 학습된 모델이 있어야 켜집니다. 학습용 정상 트래픽은 두 가지 형태로 모입니다.

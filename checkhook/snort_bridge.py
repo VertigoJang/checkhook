@@ -55,7 +55,7 @@ def follow(path, from_start, stop=None):
 
 def run(alert_file, bl=None, skip=(), block_private=False, from_start=False,
         log=print, stop=None, ignore_gids=(), refresh=3600, clock=time.monotonic,
-        ignore_rules=(), local=None):
+        ignore_rules=(), local=None, on_event=None):
     """Follow an IDS alert file and block (bl given) or only report sources.
 
     bl: a Blocklist to enforce with, or None for dry-run.
@@ -65,6 +65,8 @@ def run(alert_file, bl=None, skip=(), block_private=False, from_start=False,
       still kept for the triage.
     local: optional container of this host's own infrastructure IPs (DNS
       servers, gateway, own addresses; see netinfo.LocalInfra), never blocked.
+    on_event: optional callback(alert, action) for every alert, action one of
+      blocked, would-block, skip, ignored, recent (feeds the status board).
     refresh: seconds after which a source that keeps alerting is added again
       (= block_timeout, so an attacker is blocked again once its block expired).
     """
@@ -74,20 +76,24 @@ def run(alert_file, bl=None, skip=(), block_private=False, from_start=False,
         al = parse_alert(line)                 # Snort alert_json or Suricata eve.json
         if not al:
             continue
+        ev = on_event or (lambda a, act: None)
         src = al["src"]
-        if not src or ignore(al):
+        if not src:
             continue
+        if ignore(al):
+            ev(al, "ignored"); continue
         now = clock()
         if src in seen and now - seen[src] < refresh:
-            continue
+            ev(al, "recent"); continue
         seen[src] = now
         if src in skip or should_skip(src, block_private) or (local is not None and src in local):
             if bl is None:
                 log(f"[skip]        {src}")
-            continue
+            ev(al, "skip"); continue
         tag = "[BLOCK]" if bl is not None else "[would-block]"
         if bl is not None:
             bl.add(src)
+        ev(al, "blocked" if bl is not None else "would-block")
         log(f"{tag} {src}  ({al['ids']} sid={al['sid']} {al['msg']})")
 
 

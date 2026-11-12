@@ -68,6 +68,18 @@
   CSV, kills its own worker processes and exits at once; the unit also sets
   `TimeoutStopSec=15`.
 
+**Desktop app**
+- `checkhook gui` (PySide6, Linux and Windows): status, alerts, blocked and
+  would-be-blocked IPs with unblock and add-to-skip, the LLM report with a
+  run-now button, enforce on/off and collection pause/resume. Runs as the
+  user; changes go through `checkhook ctl` with pkexec (Linux) or UAC (Windows).
+- checkhookd writes `status.json` (world-readable) every 5 s: today's alert,
+  block and would-block counts, recent alerts with the action taken, flow
+  count, services, blocklist.
+- `checkhook stats`: the same summary in the terminal.
+- Menu entries: "CheckHook" opens the app, "CheckHook (terminal)" the banner
+  launcher. Windows installs PySide6 and both Start-menu shortcuts.
+
 **Collection control**
 - `checkhook pause [reason]` / `checkhook resume` (Linux and Windows): stop
   saving training data during attack practice on the same host while detection
