@@ -33,7 +33,12 @@ banner() {
   printf ' %s%s%s%s%s\n' "$STEEL" '╚██████╗██║  ██║███████╗╚██████╗██║  ██╗' "$RED" '██║  ██║╚██████╔╝╚██████╔╝██║  ██╗' "$RST"
   printf ' %s%s%s%s%s\n' "$STEEL" ' ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝' "$RED" '╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝' "$RST"
   printf '\n'
-  printf '   %sv%s%s\n\n' "$GREY" "$VERSION" "$RST"
+  # version on the left, author + GitHub link right-aligned to the logo width (75 columns)
+  local left="   v$VERSION" right_txt="by VertigoJang · github.com/VertigoJang"
+  local url="https://github.com/VertigoJang" link="github.com/VertigoJang"
+  if [[ -t 1 ]]; then link=$'\e]8;;'"$url"$'\e\\'"github.com/VertigoJang"$'\e]8;;\e\\'; fi
+  local pad=$(( 75 - ${#left} - ${#right_txt} )); (( pad < 2 )) && pad=2
+  printf '%s%s%s%*s%sby VertigoJang · %s%s\n\n' "$GREY" "$left" "$RST" "$pad" "" "$DIM" "$link" "$RST"
 }
 
 menu() {

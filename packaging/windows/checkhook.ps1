@@ -49,7 +49,8 @@ function Show-Banner {
         Write-Host $l[1] -ForegroundColor Red
     }
     Write-Host ''
-    Write-Host "   v$ver" -ForegroundColor DarkGray
+    $left = "   v$ver"; $right = "by VertigoJang · github.com/VertigoJang"
+    Write-Host ($left + (' ' * [Math]::Max(2, 75 - $left.Length - $right.Length)) + $right) -ForegroundColor DarkGray
     Write-Host ''
 }
 
