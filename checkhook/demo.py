@@ -1,6 +1,8 @@
 """Demo mode: point CheckHook at an isolated lab interface for a presentation.
 
   sudo checkhook demo on vboxnet0     # VirtualBox host-only network to a Kali VM
+  sudo checkhook demo on vboxnet0 --model ~/checkhook-data/checkhook-model-v1.joblib
+                                      # ... and use this ML model only while in demo mode
   sudo checkhook demo status
   sudo checkhook demo off             # put everything back exactly as it was
 
@@ -50,7 +52,10 @@ def restart(*units):
             sh("systemctl", "restart", u)
 
 
-def on(iface):
+MODEL_SAVED = "model.before"   # in STATE: the model that was installed before (if any)
+
+
+def on(iface, model=None):
     if os.path.exists(STATE):
         sys.exit("[x] demo mode is already on (sudo checkhook demo off first)")
     if not os.path.exists(f"/sys/class/net/{iface}"):
@@ -64,6 +69,18 @@ def on(iface):
     collect.main(["pause", "demo", iface])
 
     c = config.load(CONF)
+    if model:
+        if not os.path.isfile(model):
+            shutil.rmtree(STATE)
+            sys.exit(f"[x] no model file {model}")
+        live = c["ml"]["model"]
+        if os.path.exists(live):
+            shutil.copy2(live, os.path.join(STATE, MODEL_SAVED))
+        with open(os.path.join(STATE, "model.path"), "w") as f:
+            f.write(live + "\n")
+        os.makedirs(os.path.dirname(live), exist_ok=True)
+        shutil.copy2(model, live)
+        print(f"[+] demo model installed: {model} -> {live}")
     with open(CONF, encoding="utf-8-sig") as f:
         t = f.read()
     t = set_top(t, "enforce", "false")
@@ -91,6 +108,17 @@ def off():
         sys.exit("[x] demo mode is not on")
     backend_before = config.load(CONF)["backend"]
     shutil.copy2(os.path.join(STATE, "checkhook.yaml"), CONF)
+    mpath = os.path.join(STATE, "model.path")
+    if os.path.exists(mpath):
+        with open(mpath) as f:
+            live = f.read().strip()
+        saved = os.path.join(STATE, MODEL_SAVED)
+        if os.path.exists(saved):
+            shutil.copy2(saved, live)
+            print(f"[+] previous model restored: {live}")
+        elif os.path.exists(live):
+            os.unlink(live)
+            print(f"[+] demo model removed: {live}")
     saved_unit = os.path.join(STATE, "checkhook-ids.service")
     if os.path.exists(saved_unit):
         shutil.copy2(saved_unit, IDS_UNIT)
@@ -110,7 +138,11 @@ def main(argv=None):
         sys.exit("[x] needs root: sudo checkhook demo ...")
     cmd = argv[0] if argv else "status"
     if cmd == "on" and len(argv) > 1 and re.fullmatch(r"[\w.:-]{1,15}", argv[1]):
-        on(argv[1])
+        model = None
+        if "--model" in argv:
+            i = argv.index("--model")
+            model = os.path.expanduser(argv[i + 1]) if i + 1 < len(argv) else None
+        on(argv[1], model)
     elif cmd == "off":
         off()
     elif cmd == "status":

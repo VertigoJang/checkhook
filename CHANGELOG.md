@@ -89,6 +89,11 @@
   interface (e.g. a VirtualBox host-only network), with enforce off,
   block_private on and training-data collection paused; `off` restores the
   saved config and Snort unit.
+- `checkhook demo on <iface> --model FILE`: use an ML model only while in
+  demo mode; `off` removes it again or restores the model that was there.
+- `ml.eval` no longer prints the old `checkhook detect` command, warns when
+  the held-out benign set is too small to support a 0% false-positive claim,
+  and says so when no held-out attacks were given.
 - Fixed: `checkhook-xdp` stop detached from the interface named in the config
   instead of the one it was attached to, so switching interfaces left the old
   attachment behind.

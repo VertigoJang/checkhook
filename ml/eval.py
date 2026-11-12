@@ -83,11 +83,15 @@ def main():
         return
     if best:
         t, fpr, tpr, prec = best
-        print(f"[+] recommended: --threshold {t:.2f}")
-        print(f"    FPR {fpr:.2%} (<= target {a.target_fpr:.2%}); "
-              f"catches {tpr:.1%} of held-out attacks at precision {prec:.1%}")
-        print(f"    use it live:  sudo ./checkhook detect -i <iface> "
-              f"--model {a.model} --threshold {t:.2f}")
+        print(f"[+] lowest threshold meeting the target: {t:.2f}")
+        print(f"    FPR {fpr:.2%} (<= target {a.target_fpr:.2%})"
+              + (f"; catches {tpr:.1%} of held-out attacks at precision {prec:.1%}" if n1 else
+                 "; no held-out attack flows given, so detection was not measured"))
+        if n0 < 300:
+            print(f"[!] only {n0} held-out benign flows: 0 false positives here still allows a "
+                  f"true rate up to ~{3 / n0:.1%} (rule of three). Hold out more benign traffic.")
+        print(f"    use it: copy the model to ml.model and set ml.threshold: {max(t, 0.9):.2f} "
+              "in the config (0.90 or higher keeps a safety margin)")
     else:
         print(f"[!] NO threshold in [0.50, 0.99] gets FPR down to {a.target_fpr:.2%}.")
         print("    The model over-flags normal traffic even when almost certain. "
