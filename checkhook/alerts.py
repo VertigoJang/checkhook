@@ -11,7 +11,10 @@ import os
 
 
 def parse_alert(line):
-    """Return {"src", "gid", "sid", "msg", "ids"} for an alert line, else None.
+    """Return {"src", "gid", "sid", "msg", "ids", ...} for an alert line, else None.
+
+    Snort/ML lines also carry "dport" (destination port, or None) and "score"
+    (the ML attack probability; None for IDS alerts).
 
     gid: Snort generator id (1 = text rules, 3 = shared-object rules, others
     are built-in inspectors such as the packet decoder or port_scan). Suricata
@@ -34,8 +37,12 @@ def parse_alert(line):
                 "ids": "suricata"}
     if "src_addr" in ev or "sid" in ev:          # Snort 3 alert_json
         gid = _int(ev.get("gid"), 1)
+        dport = ev.get("dst_port")
+        if dport is None and isinstance(ev.get("dst_ap"), str) and ":" in ev["dst_ap"]:
+            dport = ev["dst_ap"].rsplit(":", 1)[1]          # Snort's "addr:port" field
         return {"src": ev.get("src_addr"), "gid": gid, "sid": ev.get("sid"),
-                "msg": ev.get("msg", ""), "ids": "ml" if gid == 9000 else "snort"}
+                "msg": ev.get("msg", ""), "ids": "ml" if gid == 9000 else "snort",
+                "dport": _int(dport, None), "score": ev.get("score")}
     return None
 
 

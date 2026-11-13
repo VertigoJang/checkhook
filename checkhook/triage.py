@@ -33,14 +33,31 @@ def recent_alerts(paths, last, ignore=None):
         alerts += tail_alerts(path, last)
     sig = collections.Counter(); src = collections.Counter()
     per_src = collections.defaultdict(collections.Counter)
+    evidence.clear()
     for al in alerts:
-        key = (al.get("gid", 1), al["sid"], al["msg"])
+        msg = al["msg"]
+        if al.get("gid") == 9000:      # one ML line per flow: "p=.. -> dst:port" would make
+            msg = ML_MSG               # every line its own signature and hide the pattern
+        key = (al.get("gid", 1), al["sid"], msg)
         sig[key] += 1
         if al["src"]:
             per_src[al["src"]][key] += 1
+            ev = evidence.setdefault(al["src"], {"ports": set(), "ml": 0, "pmax": 0.0})
+            if al.get("dport") is not None:
+                ev["ports"].add(al["dport"])
+            if al.get("gid") == 9000:
+                ev["ml"] += 1
+                try:
+                    ev["pmax"] = max(ev["pmax"], float(al.get("score") or 0))
+                except (TypeError, ValueError):
+                    pass
             if not ignore(al):
                 src[al["src"]] += 1
     return len(alerts), sig, src, per_src
+
+
+ML_MSG = "CHECKHOOK-ML attack-like flow"
+evidence = {}     # per source: distinct destination ports, ML flow count, highest ML p
 
 
 def blocked_ips(backend="nft"):
@@ -99,20 +116,30 @@ def build_prompt(n, sig, src, per_src, flagged, blocked, enforce, ctx, lang):
              "you judge, for each of them, whether it is a false positive or a real attack. "
              "You cannot change anything; a person reads your answer.\n")
     L.append("Context about this host (these addresses are NOT under review):")
+    L.append(f"- its own addresses (attacks on this host are aimed at these): {', '.join(ctx.get('own', [])) or 'unknown'}")
     L.append(f"- its DNS servers: {', '.join(ctx['dns']) or 'unknown'}")
     L.append(f"- its default gateway: {', '.join(ctx['gateway']) or 'unknown'}")
     L.append("Snort gid 1 and 3 are signature rules; other gids are built-in inspectors "
              "(packet decoder, stream, protocol anomalies, port_scan). Protocol anomalies on "
              "ordinary HTTPS/CDN/update traffic are usually not attacks; a port scan is. "
              "gid 9000 is CheckHook's own machine-learning flow classifier; p is its "
-             "attack probability for one connection.\n")
+             "attack probability for one connection.")
+    L.append("How to weigh the evidence: one source reaching many distinct destination ports "
+             "in a short window is a port scan; thousands of SYN-flood hits from one source are a "
+             "flood; many ML flows at p close to 1.00 support an attack. A private or lab address "
+             "can be an attacker, so being private is not by itself a sign of a false positive. "
+             "A handful of protocol-anomaly alerts with no such pattern points the other way.\n")
     L.append(f"Alerts in the window: {n}. Most frequent:")
     for (g, s, m), c in sig.most_common(8):
         L.append(f"- gid={g} sid={s} \"{m}\": {c}")
     mode = "blocked" if enforce else "would be blocked (dry-run)"
     L.append(f"\nIPs to review ({mode}):")
     for ip in flagged[:LLM_LIMIT]:
-        L.append(f"- {ip}: {src.get(ip, 0)} alerts; {_sigs(per_src[ip]) or 'no alert in window'}")
+        ev = evidence.get(ip, {})
+        extra = f"; distinct destination ports: {len(ev.get('ports', ()))}"
+        if ev.get("ml"):
+            extra += f"; ML flows: {ev['ml']} (highest p {ev['pmax']:.2f})"
+        L.append(f"- {ip}: {src.get(ip, 0)} alerts; {_sigs(per_src[ip]) or 'no alert in window'}{extra}")
     L.append(f"""
 Answer with JSON only, in this shape:
 {{"situation": "<2-3 sentences in {lang}>",

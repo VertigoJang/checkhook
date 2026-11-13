@@ -10,6 +10,11 @@
   waiting for the model.
 - Gives the model each flagged IP with its top signatures plus the local
   network context, and asks for false positives and likely real attacks.
+- The model now sees the evidence per IP: how many distinct destination
+  ports it reached, how many ML flows it triggered and the highest ML
+  probability. ML detections are counted as one signature instead of one per
+  port, and the prompt names this host's own addresses (rc16: a clear port
+  scan plus SYN flood from the lab VM had come back as "unclear").
 - The report ends with a ready-to-paste `skip:` line. Still read-only: the
   blocklist and the config are only changed by a person.
 - If Ollama is unreachable the report is still written (local part only) and
